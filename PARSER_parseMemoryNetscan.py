@@ -24,7 +24,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('/')
+    path = filename.split('\\')
     logger.info("PATH is " + str(path))    
 
     try:

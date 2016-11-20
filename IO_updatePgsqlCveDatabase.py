@@ -18,15 +18,20 @@ from collections import deque
 import xlrd
 from datetime import datetime
 import re
+import sys
 from config import CONFIG
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+from requests.exceptions import ConnectionError
 
+import logging
+logger = logging.getLogger('root')
 
 # NVD_CACHE = 'nvd_cache'
 # NVD cache is not checked into GIT due to its size, copy it in, 
 # or download from https://nvd.nist.gov/download.cfm
 # and point to NVD cache folder (containing XML files extracted from the downloaded ZIP files)
 # filenames have the following structure e.g. nvdcve-2.0-2008.xml
-# NVD_CACHE = r'C:\Users\rfoo\Desktop\work\magneto\parser\misc\cveReport\nvd_cache'
 NVD_CACHE = CONFIG['CVE']['NVD_CACHE']
 
 import logging
@@ -93,7 +98,7 @@ Example ** tags found in the description
  ** DISPTED **
  ** DISPUTED **
 '''
-def getMitreCveListings(filepath=''):
+def getMitreCveListings(filepath):
 
     if filepath == '':
         # gimme tmp file
@@ -102,24 +107,29 @@ def getMitreCveListings(filepath=''):
         # download MITRE CVE dump
         # http://cve.mitre.org/data/downloads/allitems.csv.gz
         # requests library does auto ungzipping, WOOT
-        debug(DEBUG_FLAG, 'requesting for MITRE CVE dump')
-        with closing(
-			requests.get(
-				'http://cve.mitre.org/data/downloads/allitems.csv.gz', 
-				stream=True, 
-				proxies=CONFIG['ONLINE']['PROXIES'],
-				verify=(not CONFIG['ONLINE']['MITMPROXY'])
-			)) as r:
-            if r.status_code == 200:
-                debug(DEBUG_FLAG, 'writing to temp file %s' % tmpfpath)
-                with os.fdopen(tmpfd, 'wb+') as tmp:
-                    for chunk in r:
-                        tmp.write(chunk)
-        debug(DEBUG_FLAG, 'MITRE CVE download code section done')
-
+        success = False
+        while not success:
+            try:
+                logger.info('Requesting for MITRE CVE dump')
+                with closing(
+                    requests.get(
+                        'http://cve.mitre.org/data/downloads/allitems.csv.gz', 
+                        stream=True, 
+                        proxies=CONFIG['ONLINE']['PROXIES'],
+                        verify=(not CONFIG['ONLINE']['MITMPROXY'])
+                    )) as r:
+                    if r.status_code == 200:
+                        success = True
+                        logger.info('writing to temp file %s' % tmpfpath)
+                        with os.fdopen(tmpfd, 'wb+') as tmp:
+                            for chunk in r:
+                                tmp.write(chunk)
+            except ConnectionError:
+                logger.error('Unable to request for MITRE CVE dump - network connection error')
+        #debug(DEBUG_FLAG, 'MITRE CVE download code section done')
         fileloc = tmpfpath
     else:
-        debug(DEBUG_FLAG, 'reading MITRE CVE dump allitems.csv from %s' % filepath)
+        #debug(DEBUG_FLAG, 'reading MITRE CVE dump allitems.csv from %s' % filepath)
         fileloc = filepath
 
     # open the file, seek out header line, pass into CSV DictReader to read the rest of the file
@@ -147,9 +157,6 @@ def getMitreCveListings(filepath=''):
 
     return data
 
-
-
-
 #NAME: parseCpe
 #INPUT: commondata dictionary {keys: CVEid, CVSS Score, Publish Date}; cpe string
 #OUTPUT: dictionary {keys: CVEid, CVSS Score, Publish Date, Manufacturer, Product, Version}
@@ -164,13 +171,13 @@ def parseCpe(commondata, cpe):
 
     try:
         dataitem['Product'] = cpe[3]
-    except IndexError:
-        dataitem['Product'] = '-'
+    except:
+        dataitem['Product'] = ''
 
     try:
         dataitem['Version'] = cpe[4]
-    except IndexError:
-        dataitem['Version'] = '-'
+    except:
+        dataitem['Version'] = ''
 
     return dataitem
 
@@ -186,13 +193,11 @@ def dontReturnEmptyCve(data, commondata):
             'CVEid': commondata['CVEid'],
             'CVSS Score': commondata['CVSS Score'],
             'Publish Date': commondata['Publish Date'],
-            'Manufacturer': '-',
-            'Product': '-',
-            'Version': '-',
+            'Manufacturer': '',
+            'Product': '',
+            'Version': '',
             })
     return data
-
-
 
 #NAME: getCveDetails
 #INPUT: string CVE ID to scrape (cve_id = "CVE-1234-1234")
@@ -218,7 +223,7 @@ def dontReturnEmptyCve(data, commondata):
 #TODO look into the NVD's Common Platform Enumeration (CPE) Dictionary, may be better to sync up our data implementation with the CPE for better CVE integration. https://nvd.nist.gov/cpe.cfm and https://cpe.mitre.org/ and https://cpe.mitre.org/specification/
 #TODO look into Security Content Automation Protocol (SCAP), which sounds like what we're trying to do here... http://scap.nist.gov/
 def getCveDetails(cve_id = ''):
-    debug(DEBUG_FLAG, 'getCveDetails called with "%s"' % cve_id)
+    #debug(DEBUG_FLAG, 'getCveDetails called with "%s"' % cve_id)
     data = []
 
     commondata = {}
@@ -226,85 +231,223 @@ def getCveDetails(cve_id = ''):
 
     # check NVD cache first
     year = cve_id.split('-')[1]
-    try:
-        linebuffer = ''
-        for filename in os.listdir(NVD_CACHE):
-            if filename.endswith(".xml"):
-                if year in filename:
-                    debug(DEBUG_FLAG, 'checking NVD dump file %s first' % filename)
-                    with open("%s/%s" % (NVD_CACHE, filename), 'rb') as f:
-                        # reading in the entire file into BS4 takes too long
-                        # skip to start of the entry tag for the cve we want
-                        start_tag = '<entry id="%s">' % cve_id.upper() 
-                        found_start = False
-                        linebuffer = ""
-                        for line in f:
-                            if not found_start:
-                                if start_tag in line:
-                                    found_start = True
-                                    linebuffer += line
-                                else:
-                                    # haven't found start of entry yet
-                                    pass
-                            else:
-                                # found start of entry, capturing everything till we hit end of entry tag group
+    linebuffer = ''
+    for filename in os.listdir(NVD_CACHE):
+        if filename.endswith(".xml"):
+            if year in filename:
+                #debug(DEBUG_FLAG, 'checking NVD dump file %s first' % filename)
+                with open("%s/%s" % (NVD_CACHE, filename), 'rb') as f:
+                    # reading in the entire file into BS4 takes too long
+                    # skip to start of the entry tag for the cve we want
+                    start_tag = '<entry id="%s">' % cve_id.upper() 
+                    found_start = False
+                    linebuffer = ""
+                    for line in f:
+                        if not found_start:
+                            if start_tag in line:
+                                found_start = True
                                 linebuffer += line
-                                if '</entry>' in line:
-                                    break
-        # cannot assume that we find the NVD XML file and that it has what we want
-        if linebuffer != '':
-            debug(DEBUG_FLAG, linebuffer)
-            # extract (using regex for now, maybe port to XML manipulation library if got time)
-            try:
-                commondata['CVSS Score'] = float(re.search('<cvss:score>(.+?)</cvss:score>', linebuffer).group(1))
-            except:
-                # CVSS score not found, tag to a NULL value
-                commondata['CVSS Score'] = None
+                            else:
+                                # haven't found start of entry yet
+                                pass
+                        else:
+                            # found start of entry, capturing everything till we hit end of entry tag group
+                            linebuffer += line
+                            if '</entry>' in line:
+                                break
+    # cannot assume that we find the NVD XML file and that it has what we want
+    if linebuffer != '':
+        #debug(DEBUG_FLAG, linebuffer)
+        # extract (using regex for now, maybe port to XML manipulation library if got time)
+        try:
+            commondata['CVSS Score'] = str(float(re.search('<cvss:score>(.+?)</cvss:score>', linebuffer).group(1)))
+        except:
+            # CVSS score not found, tag to a NULL value
+            commondata['CVSS Score'] = ''
+            logger.error("Unable to find string - CVSS Score")
+            pass
+        try: 
             commondata['Publish Date'] = re.search(r'<vuln:published-datetime>(\d{4}-\d{2}-\d{2}).+?</vuln:published-datetime>', linebuffer).group(1)
+        except:
+            commondata['Publish Date'] = ''
+            logger.error("Unable to find string - Publish Date")
+            pass
+        try:    
             for cpe in re.findall('<vuln:product>(.+?)</vuln:product>', linebuffer):
-                debug(DEBUG_FLAG, cpe)
+                #debug(DEBUG_FLAG, cpe)
                 data.append(parseCpe(commondata, cpe))
-            data = dontReturnEmptyCve(data, commondata)
-            debug(DEBUG_FLAG, 'getCveDetails for "%s":\n%s' % (cve_id, data))
-            return data
-    except Exception as e:
-        if type(e) is WindowsError:
-            debug(DEBUG_FLAG, 'WindowsError exception raised, cannot find this path "%s"' % NVD_CACHE)
-        else:
-            print type(e), e.args
+        except:
+            logger.error("Unable to find string - Product")
+            pass
+        data = dontReturnEmptyCve(data, commondata)
+        #debug(DEBUG_FLAG, 'getCveDetails for "%s":\n%s' % (cve_id, data))
+        return data
 
     # then go online to grab
-    soup = BeautifulSoup(
-		requests.get(
-			"https://web.nvd.nist.gov/view/vuln/detail?vulnId=%s" % cve_id, 
-			proxies=CONFIG['ONLINE']['PROXIES'],
-			verify=(not CONFIG['ONLINE']['MITMPROXY'])
-		).text, 
-		"html.parser")
+    success = False
+    while not success:
+        try:
+            logger.info('Requesting for vulnerability details')
+            soup = BeautifulSoup(
+                requests.get(
+                    "https://web.nvd.nist.gov/view/vuln/detail?vulnId=%s" % cve_id, 
+                    proxies=CONFIG['ONLINE']['PROXIES'],
+                    verify=(not CONFIG['ONLINE']['MITMPROXY'])
+                ).text, 
+                "html.parser")
+            success = True
+        except ConnectionError:
+            logger.error('Unable to request for vulnerability details - network connection error')
+    
     try:
-        commondata['CVSS Score'] = float(soup.find(string="CVSS v2 Base Score:").parent.parent.find("a").contents[0].encode())
+        commondata['CVSS Score'] = str(float(soup.find(string="CVSS v2 Base Score:").parent.parent.find("a").contents[0].encode()))
     except:
         # CVSS score not found, tag to a NULL value
-        commondata['CVSS Score'] = None
-    commondata['Publish Date'] = datetime.strptime(soup.find(string="Original release date:").next_element.strip(), "%m/%d/%Y").strftime("%Y-%m-%d")
+        commondata['CVSS Score'] = ''
+        logger.error("Unable to find string - CVSS Score")
+        pass
+
+    try:
+        commondata['Publish Date'] = datetime.strptime(soup.find(string="Original release date:").next_element.strip(), "%m/%d/%Y").strftime("%Y-%m-%d")
+    except:
+        commondata['Publish Date'] = ''
+        logger.error("Unable to find string - Publish Date")
+        pass
     # grab 'Manufacturer', 'Product', and 'Version' info from the "Vulnerable software and versions" section
     # create new dataitem to add to output data list for each CPE row containing 'Manufacturer', 'Product', and 'Version' info
     # cpe:part:vendor:product:version:update:and many more fields...
     # current mapping will be cpe:ignore:Manufacturer:Product:Version
-    vulnswandversions = soup.find(string="Vulnerable software and versions").parent.parent
-    for link in vulnswandversions.find_all("a"):
-
-        cpe = link.contents[0].encode()
-        # process only if we're dealing with a CPE link
-        if not cpe.startswith('cpe:'):
-            continue
-        data.append(parseCpe(commondata, cpe))
+    try:
+        vulnswandversions = soup.find(string="Vulnerable software and versions").parent.parent
+        for link in vulnswandversions.find_all("a"):
+            cpe = link.contents[0].encode()
+            # process only if we're dealing with a CPE link
+            if not cpe.startswith('cpe:'):
+                continue
+            data.append(parseCpe(commondata, cpe))
+    except:
+        logger.error("Unable to find string - Vulnerable software and versions")
+        pass
 
     data = dontReturnEmptyCve(data, commondata)
-    debug(DEBUG_FLAG, 'getCveDetails for "%s":\n%s' % (cve_id, data))
+    #debug(DEBUG_FLAG, 'getCveDetails for "%s":\n%s' % (cve_id, data))
     return data
 
+#NAME: checkNewCVEs
+#INPUT: psycopg2-db-handle databaseConnectionHandle
+#OUTPUT: NONE
+#DESCRIPTION: Acquire a set of CVE IDs for insertion into the database
+def checkNewCVEs(databaseConnectionHandle):
 
+    Schema = "vulnerability"
+    Table = "cve_details"
+
+    cur = databaseConnectionHandle.cursor()
+    query = "SELECT cveID FROM vulnerability.cve_details"
+    cur.execute(query)
+    existingCveId = cur.fetchall()
+    logger.info("existingCveId is " + str(existingCveId) + "\n")
+    #results retrieved from the database is a tuple in a list
+    #it cannot be converted directly into a set
+    #hence it is changed to a list first, then a set
+    existingCveIdList = []
+    for x in xrange(len(existingCveId)):
+        existingCveIdList += list(existingCveId[x])
+    existingCveIdList = set(existingCveIdList)
+    #debug(DEBUG_FLAG, "INFO: existingCveIdList is " + str(existingCveIdList) + "\n")
+
+    #store the set values of the cveIDs that is to be inserted
+    setOfId = getMitreCveListings('')['reliable_cveid_set']
+    #debug(DEBUG_FLAG, "INFO: setOfId is " + str(setOfId) + "\n")
+
+    #remove cveIDs that are already stored in the database
+    newCveId = setOfId - existingCveIdList
+    #debug(DEBUG_FLAG, "INFO: newCveId is " + str(newCveId) + "\n")
+    return newCveId
+
+
+#NAME: insertCveDetails
+#INPUT: psycopg2-db-handle databaseConnectionHandle
+#OUTPUT: NONE
+#DESCRIPTION: To insert CVE information into database
+def insertCveDetails(databaseConnectionHandle):
+    #debug(DEBUG_FLAG, "INFO: databaseConnectionHandle is " + str(databaseConnectionHandle) + "\n")
+
+    #convert set into list for indexing
+    insertCveIds = list(checkNewCVEs(databaseConnectionHandle))
+    logger.info("INFO: insertCveIds is " + str(insertCveIds) + "\n")
+    
+    if insertCveIds:
+        cveList = getMitreCveListings('')['mitre_cve_data']
+        logger.info("INFO: cveList is " + str(cveList) + "\n")
+
+    #=========================================================================================#
+    #Populating Table cve_details
+
+    Schema = "vulnerability"
+
+    for x in xrange(len(insertCveIds)):
+        Table = "cve_details"
+
+        #Take in each set of dictionary from the list by cveID name
+        cveData = cveList[insertCveIds[x]]
+        #debug(DEBUG_FLAG, "INFO: cveData is " + str(cveData) + "\n")
+
+        insertCveValue = collections.OrderedDict.fromkeys(['cveID', 'status','description','references_','phase','votes','comments', 'publishedDate', 'cvssScore'])
+        insertCveValue['cveID'] = cveData['Name'].encode('string-escape')
+        insertCveValue['status'] = cveData['Status'].encode('string-escape')
+        insertCveValue['description'] = cveData['Description'].encode('string-escape')
+        insertCveValue['references_'] = cveData['References'].encode('string-escape')
+        insertCveValue['phase'] = cveData['Phase'].encode('string-escape')
+        insertCveValue['votes'] = cveData['Votes'].encode('string-escape')
+        insertCveValue['comments'] = cveData['Comments'].encode('string-escape')
+
+        #get additional CVE details by using the cveID
+        cveDetails = getCveDetails(insertCveValue['cveID'])
+        #debug(DEBUG_FLAG, "INFO: cveDetails is " + str(cveDetails) + "\n")
+
+        #check if there are data retrieved
+        if cveDetails:
+            #create temp variable to store first result of CVE details in the list
+            temp = cveDetails[0]
+
+            #publishDate and CVSS score are the same for all products affected by the specific CVE
+            #so it is only necessary to take in both fields once
+            insertCveValue['publishedDate'] = temp['Publish Date'].encode('string-escape')
+            insertCveValue['cvssScore'] = temp['CVSS Score'].encode('string-escape')
+
+            #debug(DEBUG_FLAG, "INFO: insertCveValue is " + str(insertCveValue) + "\n")
+            db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertCveValue)
+
+            #=========================================================================================#
+            #Populating Table product
+
+            for temp in cveDetails:
+                Table = "product"
+                
+                insertProductValue = collections.OrderedDict.fromkeys(['product', 'version', 'cveID'])
+                insertProductValue['product'] = temp['Product'].encode('string-escape')
+                insertProductValue['version'] = temp['Version'].encode('string-escape')
+                insertProductValue['cveID'] = temp['CVEid'].encode('string-escape')
+
+                #debug(DEBUG_FLAG, "INFO: insertProductValue is " + str(insertProductValue) + "\n")
+                rowsInserted = db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertProductValue)
+
+                #=========================================================================================#
+                #Populating Table manufacturer
+                #When there are no product related to cveid
+                if temp['Manufacturer'] or temp['Product'] is not None and '':
+                    Table = "manufacturer"
+
+                    insertManufacturerValue = collections.OrderedDict.fromkeys(['manufacturer', 'product'])
+                    insertManufacturerValue['manufacturer'] = temp['Manufacturer']
+                    insertManufacturerValue['product'] = temp['Product']
+                    db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertManufacturerValue)
+
+        else:
+            Table = "cve_details"
+            #debug(DEBUG_FLAG, "INFO: insertCveValue is " + str(insertCveValue) + "\n")
+            db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertCveValue)
 
 #NAME: convertMsKb
 #INPUT: string
@@ -317,8 +460,6 @@ def convertMsKb(data=''):
         return data[2:]
     else:
         return 'KB%s' % data
-
-
 
 #NAME: getWindowsUpdateListings
 #INPUT: NONE
@@ -364,20 +505,28 @@ def getWindowsUpdateListings():
 
     # download windows bulletins dump
     # http://download.microsoft.com/download/6/7/3/673E4349-1CA5-40B9-8879-095C72D5B49D/BulletinSearch.xlsx
-    debug(DEBUG_FLAG, 'requesting for Windows patching dump')
-    with closing(
-		requests.get(
-			'http://download.microsoft.com/download/6/7/3/673E4349-1CA5-40B9-8879-095C72D5B49D/BulletinSearch.xlsx', 
-			stream=True, 
-			proxies=CONFIG['ONLINE']['PROXIES'],
-			verify=(not CONFIG['ONLINE']['MITMPROXY'])
-		)) as r:
-        if r.status_code == 200:
-            debug(DEBUG_FLAG, 'writing to temp file %s' % tmpfpath)
-            with os.fdopen(tmpfd, 'wb+') as tmp:
-                for chunk in r:
-                    tmp.write(chunk)
-    debug(DEBUG_FLAG, 'Windows patching dump download done')
+    #debug(DEBUG_FLAG, 'requesting for Windows patching dump')
+    success = False
+    while not success:
+        try:
+            success = True
+            logger.info('Requesting for Microsoft Bulletin dump')
+            with closing(
+                requests.get(
+                    'http://download.microsoft.com/download/6/7/3/673E4349-1CA5-40B9-8879-095C72D5B49D/BulletinSearch.xlsx', 
+                    stream=True, 
+                    proxies=CONFIG['ONLINE']['PROXIES'],
+                    verify=(not CONFIG['ONLINE']['MITMPROXY'])
+                )) as r:
+                if r.status_code == 200:
+                    #debug(DEBUG_FLAG, 'writing to temp file %s' % tmpfpath)
+                    with os.fdopen(tmpfd, 'wb+') as tmp:
+                        for chunk in r:
+                            tmp.write(chunk)
+        except ConnectionError:
+            logger.error('Unable to request for Microsoft Bulletin Dump - network connection error')
+
+   # debug(DEBUG_FLAG, 'Windows patching dump download done')
 
     # open the file, process into data struct
     data = {
@@ -395,8 +544,8 @@ def getWindowsUpdateListings():
             continue
 
         rowValues = sh.row_values(row)
-        if DEBUG_FLAG:
-            print row,
+        #if DEBUG_FLAG:
+        print row
 
         newValues = {}
 
@@ -443,158 +592,6 @@ def getWindowsUpdateListings():
     os.remove(tmpfpath)
     return data
 
-
-
-#NAME: checkNewCVEs
-#INPUT: psycopg2-db-handle databaseConnectionHandle
-#OUTPUT: NONE
-#DESCRIPTION: Acquire a set of CVE IDs for insertion into the database
-def checkNewCVEs(databaseConnectionHandle):
-
-    Schema = "sourcefiles"
-    Table = "cve_details"
-
-    #specify the values of SELECT and WHERE condition of querying statement
-    #to SELECT /only/ the cveID from the table, a variable must be created for specify 'cveid'
-    selectValue = collections.OrderedDict.fromkeys(['cveID'])
-    #create an empty dictionary as there are no WHERE conditions in the statement
-    whereValue = {}
-    #store results in a variable
-    existingCveId = db.databaseSelect(databaseConnectionHandle, Schema, Table, selectValue, whereValue)
-    debug(DEBUG_FLAG, "INFO: existingCveId is " + str(existingCveId) + "\n")
-    
-    #results retrieved from the database is a tuple in a list
-    #it cannot be converted directly into a set
-    #hence it is changed to a list first, then a set
-    existingCveIdList = []
-    for x in xrange(len(existingCveId)):
-        existingCveIdList += list(existingCveId[x])
-    existingCveIdList = set(existingCveIdList)
-    debug(DEBUG_FLAG, "INFO: existingCveIdList is " + str(existingCveIdList) + "\n")
-
-    #store the set values of the cveIDs that is to be inserted
-    setOfId = getMitreCveListings()['reliable_cveid_set']
-    debug(DEBUG_FLAG, "INFO: setOfId is " + str(setOfId) + "\n")
-
-    #remove cveIDs that are already stored in the database
-    newCveId = setOfId - existingCveIdList
-    debug(DEBUG_FLAG, "INFO: newCveId is " + str(newCveId) + "\n")
-    return newCveId
-
-
-#NAME: insertCveDetails
-#INPUT: psycopg2-db-handle databaseConnectionHandle
-#OUTPUT: NONE
-#DESCRIPTION: To insert CVE information into database
-def insertCveDetails(databaseConnectionHandle):
-    debug(DEBUG_FLAG, "INFO: databaseConnectionHandle is " + str(databaseConnectionHandle) + "\n")
-
-    #convert set into list for indexing
-    insertCveIds = list(checkNewCVEs(databaseConnectionHandle))
-    debug(DEBUG_FLAG, "INFO: insertCveIds is " + str(insertCveIds) + "\n")
-
-    cveList = getMitreCveListings()['mitre_cve_data']
-    debug(DEBUG_FLAG, "INFO: cveList is " + str(cveList) + "\n")
-
-    #=========================================================================================#
-    #Populating Table cve_details
-
-    Schema = "sourcefiles"
-
-    for x in xrange(len(insertCveIds)):
-        Table = "cve_details"
-
-        #Take in each set of dictionary from the list by cveID name
-        cveData = cveList[insertCveIds[x]]
-        debug(DEBUG_FLAG, "INFO: cveData is " + str(cveData) + "\n")
-
-        insertCveValue = collections.OrderedDict.fromkeys(['cveID', 'status','description','references_','phase','votes','comments', 'publishedDate', 'cvssScore'])
-        insertCveValue['cveID'] = cveData['Name']
-        insertCveValue['status'] = cveData['Status']
-        insertCveValue['description'] = cveData['Description']
-        insertCveValue['references_'] = cveData['References']
-        insertCveValue['phase'] = cveData['Phase']
-        insertCveValue['votes'] = cveData['Votes']
-        insertCveValue['comments'] = cveData['Comments']
-
-        #get additional CVE details by using the cveID
-        cveDetails = getCveDetails(insertCveValue['cveID'])
-        debug(DEBUG_FLAG, "INFO: cveDetails is " + str(cveDetails) + "\n")
-
-        #check if there are data retrieved
-        if cveDetails:
-            #create temp variable to store first result of CVE details in the list
-            temp = cveDetails[0]
-
-            #publishDate and CVSS score are the same for all products affected by the specific CVE
-            #so it is only necessary to take in both fields once
-            insertCveValue['publishedDate'] = temp['Publish Date']
-            insertCveValue['cvssScore'] = temp['CVSS Score']
-
-            debug(DEBUG_FLAG, "INFO: insertCveValue is " + str(insertCveValue) + "\n")
-            try:
-                db.databaseInsert(databaseConnectionHandle, Schema, Table, insertCveValue)
-            except psycopg2.Error as e:
-                print "ERROR: Problem inserting into table due to " + str(e)
-
-
-
-            #=========================================================================================#
-            #Populating Table product
-
-            for temp in cveDetails:
-                Table = "product"
-                
-                insertProductValue = collections.OrderedDict.fromkeys(['product', 'version', 'cveID'])
-                insertProductValue['product'] = temp['Product']
-                insertProductValue['version'] = temp['Version']
-                insertProductValue['cveID'] = temp['CVEid']
-
-                createTempTable = collections.OrderedDict.fromkeys(['product', 'version', 'cveID'])
-                createTempTable['product'] = "text"
-                createTempTable['version'] = "text"
-                createTempTable['cveID'] = "text"
-
-                #create dictionary to store WHERE condition of query (used to check if the key already exists in the table)
-                keyCondition = collections.OrderedDict.fromkeys(['product', 'version', 'cveID'])
-
-                debug(DEBUG_FLAG, "INFO: insertProductValue is " + str(insertProductValue) + "\n")
-                try:
-                    db.databaseExistInsert(databaseConnectionHandle, Schema, Table, createTempTable, insertProductValue, keyCondition)
-                except psycopg2.Error as e:
-                    print "ERROR: Problem inserting into table due to " + str(e)
-
-
-                #=========================================================================================#
-                #Populating Table manufacturer
-
-                Table = "manufacturer"
-
-                insertManufacturerValue = collections.OrderedDict.fromkeys(['manufacturer', 'product'])
-                insertManufacturerValue['manufacturer'] = temp['Manufacturer']
-                insertManufacturerValue['product'] = temp['Product']
-
-                createTempTable = collections.OrderedDict.fromkeys(['manufacturer', 'product'])
-                createTempTable['manufacturer'] = "text"
-                createTempTable['product'] = "text"
-
-                #create dictionary to store WHERE condition of query (used to check if the key already exists in the table)
-                keyCondition = collections.OrderedDict.fromkeys(['manufacturer', 'product'])
-
-                debug(DEBUG_FLAG, "INFO: insertManufacturerValue is " + str(insertManufacturerValue) + "\n")
-                try:
-                    db.databaseExistInsert(databaseConnectionHandle, Schema, Table, createTempTable, insertManufacturerValue, keyCondition)
-                except psycopg2.Error as e:
-                    print "ERROR: Problem inserting into table due to " + str(e)
-
-        else:
-             try:
-                Table = "cve_details"
-                debug(DEBUG_FLAG, "INFO: insertCveValue is " + str(insertCveValue) + "\n")
-                db.databaseInsert(databaseConnectionHandle, Schema, Table, insertCveValue)
-             except psycopg2.Error as e:
-                print "ERROR: Problem inserting into table due to " + str(e)
-
 #NAME: insertWindowsPatchDetails
 #INPUT: psycopg2-db-handle databaseConnectionHandle
 #OUTPUT: NONE
@@ -602,18 +599,17 @@ def insertCveDetails(databaseConnectionHandle):
 def insertWindowsPatchDetails(databaseConnectionHandle):
 
     windowsUpdateData = getWindowsUpdateListings()['windows_update_data']
-    debug(DEBUG_FLAG, "INFO: windowsUpdateData is " + str(windowsUpdateData) + "\n")
-
+    #debug(DEBUG_FLAG, "INFO: windowsUpdateData is " + str(windowsUpdateData) + "\n")
 
     #=========================================================================================#
     #Populating Table windows_patch_level
 
-    Schema = "sourcefiles"
+    Schema = "vulnerability"
     Table = "windows_patch_level"
 
     for x in xrange(len(windowsUpdateData)):
         temp = windowsUpdateData[x]
-        debug(DEBUG_FLAG, "INFO: temp is " + str(temp) + "\n")
+        #debug(DEBUG_FLAG, "INFO: temp is " + str(temp) + "\n")
 
         insertwindowsUpdateValue = collections.OrderedDict.fromkeys(['cveid','dateposted','bulletinid','bulletinkb','bulletinkbseverity','bulletinkbimpact','title','affectedproduct','componentkb','affectedcomponent','componentkbimpact','componentkbseverity','supersedes','reboot'])
         insertwindowsUpdateValue['dateposted'] = temp['Date Posted']
@@ -630,25 +626,6 @@ def insertWindowsPatchDetails(databaseConnectionHandle):
         insertwindowsUpdateValue['supersedes'] = temp['Supersedes']
         insertwindowsUpdateValue['reboot'] = temp['Reboot']
 
-        createTempTable = collections.OrderedDict.fromkeys(['cveid','dateposted','bulletinid','bulletinkb','bulletinkbseverity','bulletinkbimpact','title','affectedproduct','componentkb','affectedcomponent','componentkbimpact','componentkbseverity','supersedes','reboot'])
-        createTempTable['cveid'] = "text"
-        createTempTable['dateposted'] = "text"
-        createTempTable['bulletinid'] = "text"
-        createTempTable['bulletinkb'] = "integer"
-        createTempTable['bulletinkbseverity'] = "text"
-        createTempTable['bulletinkbimpact'] = "text"
-        createTempTable['title'] = "text"
-        createTempTable['affectedproduct'] = "text"
-        createTempTable['componentkb'] = "integer"
-        createTempTable['affectedcomponent'] = "text"
-        createTempTable['componentkbimpact'] = "text"
-        createTempTable['componentkbseverity'] = "text"
-        createTempTable['supersedes'] = "text"
-        createTempTable['reboot'] = "text"
-
-        #create dictionary to store WHERE condition of query (used to check if the key already exists in the table)
-        keyCondition = collections.OrderedDict.fromkeys(['cveid','dateposted','bulletinid','bulletinkb','bulletinkbseverity','bulletinkbimpact','title','affectedproduct','componentkb','affectedcomponent','componentkbimpact','componentkbseverity','supersedes','reboot'])
-
         #number of CVE ID for each windows patch level differs; some may not exist
         totalCve = temp['CVEs']
 
@@ -656,21 +633,18 @@ def insertWindowsPatchDetails(databaseConnectionHandle):
         if not totalCve:
             #remove 'cveid' key from all dictionaries (existing entry in database will not be checked if the key is not removed)
             insertwindowsUpdateValue.pop("cveid", None)
-            createTempTable.pop("cveid", None)
-            keyCondition.pop("cveid", None)
-            debug(DEBUG_FLAG, "INFO: insertwindowsUpdateValue is " + str(insertwindowsUpdateValue) + "\n")
+            #debug(DEBUG_FLAG, "INFO: insertwindowsUpdateValue is " + str(insertwindowsUpdateValue) + "\n")
             try:
-                db.databaseExistInsert(databaseConnectionHandle, Schema, Table, createTempTable, insertwindowsUpdateValue, keyCondition)
+                db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertwindowsUpdateValue)
             except psycopg2.Error as e:
                     print "ERROR: Problem inserting into table due to " + str(e)
         else:
             #for each different CVE ID, insert entire set of information into database 
             for i in xrange(len(totalCve)):
                 insertwindowsUpdateValue['cveid'] = totalCve[i]
-
-                debug(DEBUG_FLAG, "INFO: insertwindowsUpdateValue is " + str(insertwindowsUpdateValue) + "\n")
+                #debug(DEBUG_FLAG, "INFO: insertwindowsUpdateValue is " + str(insertwindowsUpdateValue) + "\n")
                 try:
-                    db.databaseExistInsert(databaseConnectionHandle, Schema, Table, createTempTable, insertwindowsUpdateValue, keyCondition)
+                    db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertwindowsUpdateValue)
                 except psycopg2.Error as e:
                     print "ERROR: Problem inserting into table due to " + str(e)
 
@@ -682,9 +656,9 @@ def main():
 
     DATABASE = CONFIG['DATABASE']
     dbhandle = db.databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
-    debug(DEBUG_FLAG, "INFO: dbhandle is " + str(dbhandle) + "\n")
+    #debug(DEBUG_FLAG, "INFO: dbhandle is " + str(dbhandle) + "\n")
 
-    # insertCveDetails(dbhandle)
+    insertCveDetails(dbhandle)
     insertWindowsPatchDetails(dbhandle)
 
 if __name__ == '__main__':

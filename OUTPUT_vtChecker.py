@@ -15,14 +15,17 @@ import sys
 import os
 import re
 import argparse
-import logging
+import win_inet_pton
+from test_vtKeySpammer import gimmeVtKey
+
+from stem import Signal
+from stem.control import Controller
 
 # to suppress urllib3 InsecureRequestWarning when working with MITM proxies
 requests.packages.urllib3.disable_warnings()
 
 import logging
 logger = logging.getLogger('root')
-
 
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 
@@ -44,23 +47,25 @@ class virusTotalAPI():
         logger.debug("virusTotalAPI instance %s getReport called with query string %s" % (self.name, query))
         #url = "https://www.virustotal.com/vtapi/v2/file/rescan"
         url = "https://www.virustotal.com/vtapi/v2/file/report"
-
+        
         while True:
             try:
 
                 if self.last_vt2_send and ((datetime.now() - self.last_vt2_send).seconds < self.vt_api2_wait):
                     waitfor = self.vt_api2_wait - (datetime.now() - self.last_vt2_send).seconds + 0.5
-                    logger.debug("virusTotalAPI instance %s waiting %s seconds before querying" % (self.name, waitfor))
+                    #logger.debug("virusTotalAPI instance %s waiting %s seconds before querying" % (self.name, waitfor))
                     time.sleep(waitfor)
-                    logger.debug("virusTotalAPI instance %s done waiting" % self.name)
-
+                    #logger.debug("virusTotalAPI instance %s done waiting" % self.name)
                 self.last_vt2_send = datetime.now()
+                
                 req = requests.get(
                     url, 
                     params={'resource': query, 'apikey': self.vt_api2_key}, 
                     proxies=CONFIG['ONLINE']['PROXIES'],
                     verify=(not CONFIG['ONLINE']['MITMPROXY']))
                 self.last_vt2_send = datetime.now()
+                logger.info(req.status_code)
+                logger.info(req.content)
 
                 if req.status_code == 200:
                     return req.json()
@@ -68,8 +73,15 @@ class virusTotalAPI():
             except Exception as e:
                 logger.debug("virusTotalAPI instance %s caught exception %s %s" % (self.name, type(e), e.args))
 
+def generateVTKeys(keys):
+    for i in xrange(keys):
+        gimmeVtKey()
 
-
+def renew_connection():
+    with Controller.from_port(port = 9151) as controller:
+        controller.authenticate()
+        controller.signal(Signal.NEWNYM)
+        
 #NAME: isHash
 #INPUT: string test
 #OUTPUT: True / False
@@ -81,8 +93,6 @@ def isHash(test=''):
         return True
     else:
         return False
-
-
 
 #NAME: vtDaemon
 #INPUT: vt_api2_key string API key to use; inqueue Queue; outqueue Queue; queues dictionary of all Queues
@@ -254,8 +264,6 @@ def allQueuesCleared(queues={}):
             return False
     return True
 
-
-
 #NAME: VTCHECKERMaster
 #INPUT: HashFilePath object containing all hashes and filepaths.
 #OUTPUT: None
@@ -318,7 +326,7 @@ def VTCHECKERMaster(hpf=HashFilePath()):
         for hashhexstring in hpf.dictset.iterkeys():
             whereValue = OrderedDict.fromkeys(['md5'])
             whereValue['md5'] = hashhexstring
-            searchhits = db.databaseSelect(dbhandle, 'vt_hash_check', 'results', OrderedDict.fromkeys([]), whereValue, limit=1)
+            searchhits = db.databaseSelect(dbhandle, 'vt_hash_check', 'virustotal_results', OrderedDict.fromkeys([]), whereValue, limit=1)
             if len(searchhits) > 0:
                 if (searchhits[0][1] >= 0) or (searchhits[0][1] == -2):
                     toremove.add(hashhexstring)
@@ -411,14 +419,14 @@ def VTCHECKERMaster(hpf=HashFilePath()):
                     # and check hashcheck results in db for currently existing entry
                     whereValue = OrderedDict.fromkeys(['md5'])
                     whereValue['md5'] = resulttuple[0].lower()
-                    if len(db.databaseSelect(dbhandle, 'vt_hash_check', 'results', OrderedDict.fromkeys(['md5']), whereValue, limit=1)) == 0:
+                    if len(db.databaseSelect(dbhandle, 'vt_hash_check', 'virustotal_results', OrderedDict.fromkeys(['md5']), whereValue, limit=1)) == 0:
 
                         # insert into database if new
                         logger.debug("VTCHECKERMaster inserting hashcheck results (%s,%s)" % (resulttuple[0], resulttuple[1]))
                         dictValues = OrderedDict.fromkeys(['md5', 'hits'])
                         dictValues['md5'] = resulttuple[0]
                         dictValues['hits'] = resulttuple[1]
-                        db.databaseInsert(dbhandle, 'vt_hash_check', 'results', dictValues)
+                        db.databaseInsert(dbhandle, 'vt_hash_check', 'virustotal_results', dictValues)
 
                     else:
 
@@ -428,7 +436,7 @@ def VTCHECKERMaster(hpf=HashFilePath()):
                         setValue['hits'] = resulttuple[1]
                         whereValue = OrderedDict.fromkeys(['md5'])
                         whereValue['md5'] = resulttuple[0]
-                        db.databaseUpdate(dbhandle, 'vt_hash_check', 'results', setValue, whereValue)
+                        db.databaseUpdate(dbhandle, 'vt_hash_check', 'virustotal_results', setValue, whereValue)
 
 
                 counter += 1
@@ -534,8 +542,12 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)    
     group.add_argument("-e", "--encase", help="Encase export file, either .txt tab delimited or .csv are accepted.  Must contain the Hash Value and Full Path fields.")
     group.add_argument("-m", "--md5sum", help="md5sum-generated file.")
+    parser.add_argument('-k', dest='keys', type=int, required=False, help="Number of VT Keys to generate") 
     args = parser.parse_args()
     
+    if args.keys:
+        generateVTKeys(args.keys)
+
     #Initiate the dictionary to store Hash and Full Path
     hpf = HashFilePath()
 
@@ -571,24 +583,24 @@ def main():
             counter = 0
             for line in f:
                 # extract md5 and filepath thereafter
-                match = re.match('^([0-9a-f]+)  (.*)$', line.strip())
+                match = re.match('^([0-9a-f]+) (.*)$', line.strip())
 
                 #Note that match.group(0) is the entire match, match.group(1) is the first parenthesized subgroup, match.group(2) is the 2nd parenthesized subgroup.          
-                
-                hpf.addHashFilePath(match.group(1), match.group(2))
+                if match is not None:
+                    hpf.addHashFilePath(match.group(1), match.group(2))
 
-                counter += 1
-                if CONFIG['VTCHECKER']['SHOW_LINE_COUNTER']:
-                    print counter,
-                    sys.stdout.flush()
-                elif counter % 10000 == 0:
-                    print ".",
-                    sys.stdout.flush()
-                if counter % 1000000 == 0:
-                    logging.info("Read %s lines into %s deduped hashes" % (counter, len(hpf.dictset)))
+                    counter += 1
+                    if CONFIG['VTCHECKER']['SHOW_LINE_COUNTER']:
+                        print counter,
+                        sys.stdout.flush()
+                    elif counter % 10000 == 0:
+                        print ".",
+                        sys.stdout.flush()
+                    if counter % 1000000 == 0:
+                        logging.info("Read %s lines into %s deduped hashes" % (counter, len(hpf.dictset)))
             logging.info("Read %s lines into %s deduped hashes" % (counter, len(hpf.dictset)))
 
-    
+    renew_connection()
     logger.debug('Calling VTCHECKERMaster with %s items in hashlist' % len(hpf.dictset))
     VTCHECKERMaster(hpf)
 

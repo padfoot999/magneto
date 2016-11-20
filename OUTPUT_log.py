@@ -20,7 +20,7 @@ def setupLogger(name):
     #To print on screen
     consoleHandler = logging.StreamHandler(os.sys.stdout)
     consoleHandler.setFormatter(formatter)
-    consoleHandler.setLevel(logging.INFO) #set different level for printing on screen
+    consoleHandler.setLevel(logging.DEBUG) #set different level for printing on screen
     
     #Create logger with above handlers
     logger = logging.getLogger(name)    

@@ -63,7 +63,7 @@ def processMemory(rawMemoryFilePath):
     unprocessedlist = []
     # traverse root directory, and list directories as dirs and files as files
     for root, dirs, files in os.walk(rawMemoryFilePath):
-        path = root.split('/')        
+        path = root.split('\\')        
         for filename in files:
             #Queueing all triage output files for processing. Once processed, they are removed
             if filename.endswith(('.raw')):
