@@ -23,7 +23,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 	cur.execute(query)
 	fileBuffer = fp.dequeFile(filename)
 
-	path = filename.split('/')
+	path = filename.split('\\')
 
 	#=========================================================================================#
 	#Populating table triage_sysinfo_product
@@ -470,7 +470,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 					nictotalinstalled = ""
 					logger.error("SystemProblem assigning nictotalinstalled due to " + str(e))
 					pass
-
+				logger.info(nictotalinstalled)
 				insertNICValue['totalinstalled'] = int(nictotalinstalled)
 				logger.debug("nictotalinstalled is " + str(nictotalinstalled) + "\n")
 
@@ -535,7 +535,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 					insertNICValue['dhcpserver'] = dhcpserver
 					logger.debug("dhcpserver is " + dhcpserver + "\n")
 
-				if fileBuffer[0][0:2] == ['IP', 'address(es)']:
+				if fileBuffer[0][0:2] == ['IP', 'address(es)'] or fileBuffer[0][0:2] == ['IP', 'Address']:
 					#Populating table triage_sysinfo_nicip
 					try:
 						#Remove header line 'IP', 'address(es)'

@@ -50,4 +50,10 @@ cursor.execute("DELETE FROM network.mem_netscan WHERE imagename > ''")
 
 #ipblacklist
 cursor.execute("DELETE FROM ip_blacklist.blacklistedip WHERE ipaddress > ''")
+
+#vulnerability
+#cursor.execute("DELETE FROM vulnerability.windows_patch_level WHERE cveid > ''")
+#cursor.execute("DELETE FROM vulnerability.cve_details WHERE cveID > ''")
+#cursor.execute("DELETE FROM vulnerability.product WHERE cveID > ''")
+#cursor.execute("DELETE FROM vulnerability.manufacturer WHERE product > ''")
 dbconnection.commit()

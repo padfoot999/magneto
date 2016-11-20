@@ -71,7 +71,12 @@ def databaseInitiate():
         databaseCursor.execute("CREATE SCHEMA vt_hash_check;")
         #Changed from results to virustotal_results
         databaseCursor.execute("CREATE TABLE vt_hash_check.virustotal_results(md5 text, hits integer);")
-
+        databaseCursor.execute("CREATE SCHEMA vulnerability;")
+        databaseCursor.execute("CREATE TABLE vulnerability.windows_patch_level(cveid text, dateposted text, bulletinid text, bulletinkb text, bulletinkbseverity text, bulletinkbimpact text, title text, affectedproduct text, componentkb text, affectedcomponent text, componentkbimpact text, componentkbseverity text, supersedes text, reboot text);")
+        databaseCursor.execute("CREATE TABLE vulnerability.cve_details(cveID text, status text, description text, references_ text, phase text, votes text, comments text, publishedDate text, cvssScore text);")
+        databaseCursor.execute("CREATE TABLE vulnerability.product(product text, version text, cveID text);")
+        databaseCursor.execute("CREATE TABLE vulnerability.manufacturer(manufacturer text, product text);")
+        
         #Save changes
         databaseHandle.commit()
     except:
@@ -93,10 +98,20 @@ def databaseConnect(databaseHost, databaseName, databaseUser, databasePassword):
     else:        
         return databaseConnectionHandle
 
-#NAME: cleanBlankStrings
+#NAME: cleanStrings
 #INPUT: dictionary dictValues
 #OUTPUT: dictionary dictValues
 #DESCRIPTION: Initialize all string values within input dict to None datatype for new queries
+def cleanStrings(dictValues):
+    for key in dictValues.keys():
+        if dictValues[key] == '':
+            dictValues[key] = None
+        else:
+            if isinstance(dictValues[key], basestring):
+                dictValues[key] = dictValues[key].replace("'", "")
+                dictValues[key] = dictValues[key].replace('"', "")
+    return dictValues
+
 def cleanBlankStrings(dictValues):
     for key in dictValues.keys():
         if dictValues[key] == '':
@@ -135,7 +150,39 @@ def databaseInsert(databaseConnectionHandle, databaseSchema, databaseTable, dict
         logger.error(('Unable to INSERT!\n{0}').format(e))
         sys.exit(1)
 
+def databaseExistInsert(databaseConnectionHandle, databaseSchema, databaseTable, dictValues):
+    rowsInserted = 0
+    value = None
+    cur = databaseConnectionHandle.cursor()
+    query = "INSERT INTO " + databaseSchema + "." + databaseTable + " ("
+    query2 = ""
+    query3 = ""
+    dictValues = cleanStrings(dictValues)
+    #Creating SQL query statement
+    for key, value in dictValues.items():
+        if value is not None:
+            query += key
+            query +=", "
+            query2 +="'" + value + "'"
+            query2 +=", "
+            query3 += key + "='" + value + "'"
+            query3 +=" AND "
+    query = query[:-2]
+    query2 = query2[:-2]
+    query3 = query3[:-5]
+    query += ") SELECT " + query2 + " WHERE NOT EXISTS (SELECT * FROM " + databaseSchema + "." + databaseTable + " WHERE " + query3 + ");"
 
+    try:
+        logger.info("query is " + query + "\n")
+        logger.info("dictValues.values() is " + str(dictValues.values()) + "\n")
+        cur.execute(query)
+        logger.info("%s row(s) inserted!" % cur.rowcount)
+        rowsInserted = cur.rowcount        
+        databaseConnectionHandle.commit()
+    except psycopg2.OperationalError as e:
+        logger.error(('Unable to INSERT!\n{0}').format(e))
+        sys.exit(1)
+    return rowsInserted
 
 #NAME: databaseUpdate
 #INPUT: psycopg2-db-handle databaseConnectionHandle, string databaseSchema,
@@ -162,8 +209,8 @@ def databaseUpdate(databaseConnectionHandle, databaseSchema, databaseTable, dict
     #Remove the comma
     query = query[:-4]
 
-    dictSetValues = cleanBlankStrings(dictSetValues)
-    dictWhereValues = cleanBlankStrings(dictWhereValues)
+    dictSetValues = cleanStrings(dictSetValues)
+    dictWhereValues = cleanStrings(dictWhereValues)
 
     updateExecutionList = dictSetValues.values() + dictWhereValues.values()
     logger.info("dictSetValues.values() is " + str(dictSetValues.values()) + "\n")
@@ -203,6 +250,7 @@ def databaseWhitelist(databaseConnectionHandle, project, databaseSchema, databas
     query += groupTransaction + ", COUNT (DISTINCT "
     query += columnCounted + ") "
     query += "FROM " + databaseSchema + "." + databaseTable
+    query += " WHERE imagename IN (SELECT DISTINCT imagename FROM project.project_image_mapping WHERE projectname='" + project + "')"
     query += " GROUP BY " + groupTransaction
     query += " ORDER BY count "
     if orderRow == 0:
@@ -235,7 +283,7 @@ def main():
 
     #Sample test code
     #Note that all dictValues needs to be an ordered dictionary!!!
-    dbhandle = db.databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
+    dbhandle = databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
     print "dbhandle is " + str(dbhandle) + "\n"
 
     sampleSchema = "path"

@@ -22,7 +22,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 	fileBuffer = fp.dequeFile(filename)
 
-	path = filename.split('/')
+	path = filename.split('\\')
 
 	#To prevent duplicate entries
 	tempPathList = []
@@ -54,7 +54,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 		tempValue = tempString.split('=')
 		logger.debug("tempValue is " + str(tempValue))
 		logger.debug("tempValue[0] is " + str(tempValue[0]))
-		logger.debug("tempValue[1] is " + str(tempValue[1]))
+		logger.debug("tempValue[1] is " + tempValue[1])
 
 		#Inserting into ordered dictionary
 		skip = False
@@ -62,14 +62,14 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 		if tempValue[0].lower() == "commonprogramfiles(x86)":
 			try:
 				insertValue['commonprogramfilesx86'] = tempValue[1]
-				logger.debug("insertValue[commonprogramfilesx86] is " + str(tempValue[1]))
+				logger.debug("insertValue[commonprogramfilesx86] is " + tempValue[1])
 			except (ValueError,IndexError) as e:
 				logger.error("SystemVariables: Problem inserting " + tempValue[0].lower() + " due to " + str(e))
 				pass
 		elif tempValue[0].lower() == "programfiles(x86)":
 			try:
 				insertValue['programfilesx86'] = tempValue[1]
-				logger.debug("insertValue[programfilesx86] is " + str(tempValue[1]))
+				logger.debug("insertValue[programfilesx86] is " + tempValue[1])
 			except (ValueError,IndexError) as e:
 				logger.error("SystemVariables: Problem inserting " + tempValue[0].lower() + " due to " + str(e))
 				pass

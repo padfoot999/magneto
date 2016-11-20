@@ -20,7 +20,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('/')
+    path = filename.split('\\')
 
     #Skip thru the buffer until the title line
     while fileBuffer[0] != ['Offset(P)', 'Name', 'PID', 'pslist', 'psscan', 'thrdproc', 'pspcid', 'csrss', 'session', 'deskthrd', 'ExitTime']:

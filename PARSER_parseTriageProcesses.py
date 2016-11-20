@@ -22,7 +22,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('/')
+    path = filename.split('\\')
 
     try:
         #Skip thru the buffer until the title line

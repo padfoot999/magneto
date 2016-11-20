@@ -6,6 +6,9 @@ __description__ = 'Handle all file open, read and process operations'
 import collections
 import codecs
 
+import io
+import chardet
+
 import os
 
 import logging
@@ -14,65 +17,87 @@ logger = logging.getLogger('root')
 import argparse
 
 TRANSLATION_DICT = {
-    'ホスト名:': 'Host Name:',
-    'OS 名:': 'OS Name:',
-    'OS バージョン:': 'OS Version:',
-    'ビルド': 'Build',
-    'OS 製造元:': 'OS Manufacturer:',
-    'OS 構成:': 'OS Configuration:',
-    'スタンドアロン ワークステーション': 'Stand-alone workstation',
-    'OS Buildの種類:': 'OS Build Type:',
-    '登録されている所有者:': 'Registered Owner:',
-    '登録されている組織:': 'Registered Organization:',
-    'プロダクト ID:': 'Product ID:',
-    '最初のインストール日付:': 'Original Install Date:',
-    'システム起動時間:': 'System Boot Time:',
-    'システム製造元:': 'System Manufacturer:',
-    'システム モデル:': 'System Model:',
-    'システムの種類:': 'System Type:',
-    'プロセッサ:': 'Processor(s):',
-    'プロセッサインストール済みです。': 'Processor(s) Installed.',
-    'Windows ディレクトリ:': 'Windows Directory:',
-    'システム ディレクトリ:': 'System Directory:',
-    '起動デバイス:': 'Boot Device:',
-    'システム ロケール:': 'System Locale:',
-    '日本語': 'Japanese',
-    '入力ロケール:': 'Input Locale:',
-    'タイム ゾーン:': 'Time Zone:',
-    'バンコク、ハノイ、ジャカルタ': 'Bangkok, Hanoi, Jakarta',
-    '物理メモリの合計:': 'Total Physical Memory:',
-    '利用できる物理メモリ:': 'Available Physical Memory:',
-    '仮想メモリ: 最大サイズ:': 'Virtual Memory: Max Size:',
-    '仮想メモリ: 利用可能:': 'Virtual Memory: Available:',
-    '仮想メモリ: 使用中:': 'Virtual Memory: In Use:',
-    'ページ ファイルの場所:': 'Page File Location(s):',
-    'ドメイン:': 'Domain:',
-    'ログオン サーバー:': 'Logon Server:',
-    'ホットフィックス:': 'Hotfix(s):',
-    'ホットフィックスがインストールされています。': 'Hotfix(s) Installed.',
-    'ネットワーク カード:': 'Network Card(s):',
-    'インストール済みです。': 'Installed.',
-    '接続名:': 'Connection Name:',
-    'DHCP が有効:': 'DHCP Enabled:',
-    'はい': 'Yes',
-    'いいえ': 'No',
-    'DHCP サーバー:': 'DHCP Server:',
-    'IP アドレス': 'IP address(es)',
-    '状態:': 'Status:',
-    'メディアは接続されていません': 'Media disconnected',
-    'Hyper-V の要件:': 'Hyper-V Requirements:',
-    'VM モニター モード拡張機能:': 'VM Monitor Mode Extensions:',
-    'ファームウェアで仮想化が有効になっています:': 'Virtualization Enabled In Firmware:',
-    '第 2 レベルのアドレス変換:': 'Second Level Address Translation:',
-    'データ実行防止が使用できます:': 'Data Execution Prevention Available:',
-    'イメージ名': 'Image Name',
-    'サービス': 'Services',
-    'イーサネット':'Ethernet',
-    'ドライバー管理により、デバイス インスタンス':'The driver management, device instance',
-    'をインストールするプロセスを次の状態で終了しました':'The install process failed with the following status',
-    'ドライバー パッケージのインストールに成功しました。':''
+    u'ホスト名:': 'Host Name:',
+    u'名:': 'Name:',
+    u'バージョン:': 'Version:',
+    u'ビルド': 'Build',
+    u'製造元:': 'Manufacturer:',
+    u'構成:': 'Configuration:',
+    u'スタンドアロン ワークステーション': 'Stand-alone workstation',
+    u'ビルドの種類:': 'Build Type:',
+    u'登録されている所有者:': 'Registered Owner:',
+    u'登録されている組織:': 'Registered Organization:',
+    u'プロダクト': 'Product',
+    u'最初のインストール日付:': 'Original Install Date:',
+    u'システム起動時間:': 'System Boot Time:',
+    u'システム製造元:': 'System Manufacturer:',
+    u'モデル:': 'Model:',
+    u'システムの種類:': 'System Type:',
+    u'プロセッサ:': 'Processor(s):',
+    u'プロセッサインストール済みです。': 'Processor(s) Installed.',
+    u'ディレクトリ:': 'Directory:',
+    u'システム': 'System',
+    u'起動デバイス:': 'Boot Device:',
+    u'ロケール:': 'Locale:',
+    u'入力ロケール:': 'Input Locale:',
+    u'タイム': 'Time',
+    u'ゾーン:': 'Zone:',
+    u'バンコク、ハノイ、ジャカルタ': 'Bangkok, Hanoi, Jakarta',
+    u'物理メモリの合計:': 'Total Physical Memory:',
+    u'利用できる物理メモリ:': 'Available Physical Memory:',
+    u'仮想メモリ:' : 'Virtual Memory:',
+    u'最大サイズ:': 'Max Size:',
+    u'利用可能:': 'Available:',
+    u'使用中:': 'In Use:',
+    u'ページ': 'Page',
+    u'ファイルの場所:': 'File Location(s):',
+    u'ドメイン:': 'Domain:',
+    u'ログオン': 'Logon',
+    u'サーバー:': 'Server:',
+    u'ホットフィックス:': 'Hotfix(s):',
+    u'ホットフィックスがインストールされています。': 'Hotfix(s) Installed.',
+    u'ネットワーク': 'Network',
+    u'カード:': 'Card(s):',
+    u'インストール済みです。': 'Installed.',
+    u'接続名:': 'Connection Name:',
+    u'が有効:': 'Enabled:',
+    u'はい': 'Yes',
+    u'いいえ': 'No',
+    u'サーバー:': 'Server:',
+    u'アドレス': 'address(es)',
+    u'状態:': 'Status:',
+    u'メディアは接続されていません': 'Media disconnected',
+    u'の要件:': 'Requirements:',
+    u'モニター': 'Monitor', 
+    u'モード拡張機能:': 'Mode Extensions:',
+    u'ファームウェアで仮想化が有効になっています:': 'Virtualization Enabled In Firmware:',
+    u'第':'',
+    u'レベルのアドレス変換:': 'Second Level Address Translation:',
+    u'データ実行防止が使用できます:': 'Data Execution Prevention Available:',
+    u'イメージ名': 'Image Name',
+    u'サービス': 'Services',
+    u'イーサネット':'Ethernet',
+    u'ドライバー管理により、デバイス インスタンス':'The driver management, device instance',
+    u'をインストールするプロセスを次の状態で終了しました':'The install process failed with the following status',
+    u'ドライバー パッケージのインストールに成功しました。':'',
+    u'アクティブな接続': 'Active Connections',
+    u'プロトコル': 'Proto',
+    u'ローカル': 'Local',
+    u'アドレス': 'Address',
+    u'外部アドレス': 'Foreign Address',
+    u'状態': 'State'
 }
 
+ILLEGAL_SENTENCES = [['The', 'requested', 'operation', 'requires', 'elevation.']]
+
+#NAME: dequeFile
+#INPUT: string line
+#OUTPUT: string line
+#DESCRIPTION: Cleans lines to make sure that headings are standardized
+def cleanline(line):
+    if line[0:2] == ['2', 'Second']:
+        line.remove('2')
+    return line
 
 #NAME: dequeFile
 #INPUT: string filename
@@ -84,21 +109,37 @@ def dequeFile(filename):
     #deque is a list-like container which supports fast appends and pops on either end
     fileBuffer = collections.deque()
 
-    with open(filename) as file:
-        for line in file:
-            #logger.debug("START line is " + line + "\n")
+    rawdata = open(filename, "r").read()
+    result = chardet.detect(rawdata)
+    charenc = result['encoding']
+    if result['confidence'] >= 0.75:
+        charenc = result['encoding']
+    else:
+    #default encoding for texts with language
+        charenc = 'SHIFT-JIS'
+    try: 
+        f = codecs.open(filename, "r", charenc)
+        f.read()
+    except:
+        charenc = result['encoding']
+    #Still able to use utf-8 to read when original file is encoded with utf-8-sig
+    if charenc == "UTF-8-SIG": 
+        charenc = "UTF-8"
+
+    with io.open(filename, "r", encoding=charenc) as f:
+        for line in f:
             #remove whitespace
             if line.rstrip():
-                line = " ".join(line.split()).strip()
-                #logger.debug("After removing whitespace, line is " + line + "\n")
-
                 #split line into individual word for easier string matching
+                line = " ".join(line.split()).strip()
                 line = line.split(" ")
-                #logger.debug("After splitting, line is " + str(line) + "\n")
-
-                fileBuffer.append(line)
-                #print "deque fileBuffer to be returned is " + str(fileBuffer)
-
+                line = translateLine(line)
+                #Translated line contains spaces
+                line = " ".join(line).strip()
+                line = line.split(" ")
+                line = cleanline(line)
+                if line not in ILLEGAL_SENTENCES:
+                    fileBuffer.append(line)
     return fileBuffer
 
 #NAME: splitDelimitedLine
@@ -133,22 +174,14 @@ def splitDelimitedLine(list, delimiter):
 #DESCRIPTION: opens and reads filename in python's default ASCII/UTF8 encoding,
 # and does translation of elements based on TRANSLATION_DICT.  supports multiple translations per line.
 def translateLine(rawLine):
-    logger.info("rawLine is " + str(rawLine))
-
     if any(x in rawLine for x in TRANSLATION_DICT.keys()):
+        print "Translating"
         for key in TRANSLATION_DICT.keys():
-            if rawLine.find(key) != -1:
-                line = line.replace(key, TRANSLATION_DICT[key])                                
-                return line
-                break
-
-    try:
-        newLine = rawLine.decode('utf-8')        
-        return newLine
-    except:
-        logger.info("Following string is not UTF-8 : " + str(rawLine))
-        #unique error string to indicate there's a possible parsing error. Investigator to verify with forensic image for the application name
-        return "ERRORERRORERRORERRORERROR"
+            if key in rawLine:
+                rawLine = [line.replace(key, TRANSLATION_DICT[key]) for line in rawLine]
+        return rawLine
+    else:
+        return rawLine
 
 
 #NAME: main

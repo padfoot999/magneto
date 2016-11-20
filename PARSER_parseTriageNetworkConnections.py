@@ -42,7 +42,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('/')
+    path = filename.split('\\')
     logger.debug("PATH is " + str(path))
     logger.debug("imagename is " + str(path[-2]))
 
