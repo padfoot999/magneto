@@ -14,6 +14,7 @@ from openpyxl import Workbook, load_workbook
 import csv
 import sys
 import pandas as pd
+#Install python-magic
 import magic
 import os
 import hashlib
@@ -55,8 +56,6 @@ class virusTotalAPI():
     #DESCRIPTION: Upload binaries with no reports from previous VT md5 Query
     def uploadFile(self, path):
         logger.debug("virusTotalAPI instance %s upload file with query string %s" % (self.name, path))
-        #url = "https://www.virustotal.com/vtapi/v2/file/rescan"
-        #url = "https://www.virustotal.com/vtapi/v2/file/report"
         url = "https://www.virustotal.com/vtapi/v2/file/scan"
         
         while True:
