@@ -87,8 +87,7 @@ def applicationQueryDatabase(dbEngine, projectname, imagename):
     productName = re.escape(productName)
     applist.append(productName)
     pattern = '|'.join(applist)
-    print pattern
-
+    
     for chunk in pd.read_sql(query2, dbEngine, chunksize=1000):
         chunk = chunk.loc[chunk['fullproductname'].notnull()]
         appvuln = chunk.loc[chunk['fullproductname'].str.contains(pattern)]
@@ -143,13 +142,13 @@ def hotfixQueryDatabase(dbEngine, projectname, imagename):
         productName += "32-bit systems"
     else:
         productName += "x64-based systems"
-    if df3['servicepack'].iloc[0] is not '':
+    if (df3['servicepack'].iloc[0] is not '') and (df3['servicepack'].iloc[0] is not '0'):
         productName += " service pack " + str(df3['servicepack'].iloc[0])
     osvulnerabilities = df2.loc[df2['affectedproduct'].str.lower()==productName]
     applicationVulnerabilities = osvulnerabilities.loc[osvulnerabilities['affectedcomponent'].notnull()]
     #OS vulnerabilities are only those with no affected component, those with affected component are furthered filter using application list
     osvulnerabilities = osvulnerabilities.loc[osvulnerabilities['affectedcomponent'].isnull()]
-    osvulnerabilities = os.vulnerabilities.drop(['imagename', 'description'],1)
+    osvulnerabilities = osvulnerabilities.drop(['imagename', 'description'],1)
     osvulnerabilities.to_excel(writer, sheet_name="OS Vulnerabilities", index=False)
 
     #Filters for application vulnerabilities
@@ -196,8 +195,8 @@ def main():
     projectname = args.projectname
     imagename = args.imagename
 
-    checkApplicationCVE(engine, projectname, imagename)
-    #checkHotfixCVE(engine, projectname, imagename)
+    #checkApplicationCVE(engine, projectname, imagename)
+    checkHotfixCVE(engine, projectname, imagename)
 
 if __name__ == '__main__':
     main()
