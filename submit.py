@@ -26,7 +26,6 @@ import PARSER_parseMemoryNetscan
 
 from config import CONFIG
 
-
 #For log file
 import logging
 logger = logging.getLogger('root')
@@ -36,13 +35,12 @@ logger = logging.getLogger('root')
 #INPUT: database connection handle, directory to evidence files
 #OUTPUT: NONE
 #DESCRIPTION:   
-def process(databaseConnectionHandle, directory):
+def dbprocess(databaseConnectionHandle, directory):
     unprocessedlist=[]    
     cur = databaseConnectionHandle.cursor()
 
     # traverse root directory, and list directories as dirs and files as files
     for root, dirs, files in os.walk(directory):
-        path = root.split('\\')
         # logger.info("root is " + root)
         # logger.info("dirs is " + str(dirs))
         # logger.info("files is " + str(files))
@@ -53,7 +51,7 @@ def process(databaseConnectionHandle, directory):
                     unprocessedlist.append(os.path.join(root,filename))
 
     for rawFile in unprocessedlist:
-        if "\\System Info.txt" in rawFile:
+        if "System Info.txt" in rawFile:
             logger.info("System Info file is " + rawFile)
             try:
                 logger.info("Processing System Info...")                    
@@ -65,13 +63,12 @@ def process(databaseConnectionHandle, directory):
                 sys.exit()
                 pass
 
-        if "\\System Variables.txt" in rawFile:
-            print "if success" + rawFile
+        if "System Variables.txt" in rawFile:
             logger.info("System Variables file is " + rawFile)
             try:
-                logger.info("Processing System Variables...")
-                PARSER_parseTriageSystemVariables.parseAndPopulate(databaseConnectionHandle, rawFile)
-                logger.info("Processing System Variables Completed.")                    
+            	logger.info("Processing System Variables...")
+            	PARSER_parseTriageSystemVariables.parseAndPopulate(databaseConnectionHandle, rawFile)
+            	logger.info("Processing System Variables Completed.")                    
             except Exception as e:
                 logger.error("Error encountered at PARSER_parseTriageSystemVariables.") 
                 logger.error(e.message)                    
@@ -79,19 +76,19 @@ def process(databaseConnectionHandle, directory):
                 pass
 
         
-        if "\\Processes.txt" in rawFile:
+        if "Processes.txt" in rawFile:
             logger.info("Processes file is " + rawFile)
             try:
-                logger.info("Processing Processes...")
-                PARSER_parseTriageProcesses.parseAndPopulate(databaseConnectionHandle, rawFile)                    
-                logger.info("Processing Processes Completed.")                    
+	            logger.info("Processing Processes...")
+	            PARSER_parseTriageProcesses.parseAndPopulate(databaseConnectionHandle, rawFile)                    
+	            logger.info("Processing Processes Completed.")                    
             except Exception as e:
                 logger.error("Error encountered at PARSER_parseTriageProcesses.") 
                 logger.error(e.message, e.args)                   
                 sys.exit()
                 pass
 
-        if "\\Network Connections.txt" in rawFile:
+        if "Network Connections.txt" in rawFile:
             logger.info("Network Connections file is " + rawFile)
             try:
                 logger.info("Processing Network Connections...")                    
@@ -108,8 +105,7 @@ def process(databaseConnectionHandle, directory):
         if "-memory-pslist.txt" in rawFile:
             logger.info("pslist file is " + rawFile)
             try:
-                logger.info("Processing pslist...")                
-                                
+                logger.info("Processing pslist...")                            
                 PARSER_parseMemoryPslist.parseAndPopulate(databaseConnectionHandle, rawFile) 
                 logger.info("Processing pslist Completed.")                    
             except:
@@ -120,7 +116,6 @@ def process(databaseConnectionHandle, directory):
         if "-memory-pstree.txt" in rawFile:
             logger.info("pstree file is " + rawFile)
             try:
-
                 logger.info("Processing pstree...")                                        
                 PARSER_parseMemoryPstree.parseAndPopulate(databaseConnectionHandle, rawFile)
                 logger.info("Processing pstree Completed.")                    
@@ -144,9 +139,9 @@ def process(databaseConnectionHandle, directory):
         if "-memory-envars.txt" in rawFile:
             logger.info("envars file is " + rawFile)
             try:
-                logger.info("Processing envars...")                    
-                PARSER_parseMemoryEnvars.parseAndPopulate(databaseConnectionHandle, rawFile)
-                logger.info("Processsing envars Completed.")                    
+	            logger.info("Processing envars...")                    
+	            PARSER_parseMemoryEnvars.parseAndPopulate(databaseConnectionHandle, rawFile)
+	            logger.info("Processsing envars Completed.")                    
             except:
                 logger.error("Error encountered at PARSER_parseMemoryEnvars.")                    
                 sys.exit()
@@ -158,7 +153,6 @@ def process(databaseConnectionHandle, directory):
                 logger.info("Processing netscan...")                    
                 PARSER_parseMemoryNetscan.parseAndPopulate(databaseConnectionHandle, rawFile)
                 logger.info("Processsing netscan Completed.")                    
-
             except:
                 logger.error("Error encountered at PARSER_parseMemoryNetscan.")                    
                 sys.exit()
@@ -190,8 +184,8 @@ def main():
     imagelist = []
 
     for root, dirs, files in os.walk(searchDirectory):
-        path = root.split('\\')
-        imgname = path[-3]
+    	#searchDirectory cannot end with a slash!
+        imgname = os.path.split(searchDirectory)[1]
 
         Schema = "project"
         Table = "project_image_mapping"
@@ -207,12 +201,9 @@ def main():
                 db.databaseInsert(dbhandle,Schema,Table,insertProjectValue)
 
         #ZFZFTODO: Need to handle memory and tcpdump folders?
-
     
-    process(dbhandle, searchDirectory)
+    dbprocess(dbhandle, searchDirectory)
     
-
-
 if __name__ == '__main__':
     main()
 

@@ -1,11 +1,12 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Triage System Info.txt'
 
 import collections
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 import logging
 logger = logging.getLogger('root')
 
@@ -23,7 +24,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 	cur.execute(query)
 	fileBuffer = fp.dequeFile(filename)
 
-	path = filename.split('\\')
+	path = os.path.split(os.path.split(filename)[0])
 
 	#=========================================================================================#
 	#Populating table triage_sysinfo_product
@@ -79,7 +80,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 														 'secondleveladdresstranslation',
 														 'dataexecutionpreventionavailable'])
 
-	insertSystemInfo['imagename'] = path[-2]
+	insertSystemInfo['imagename'] = path[1]
 
 	try:
 		while fileBuffer[0][0:3] != ['System', 'information', 'for']:
@@ -167,7 +168,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 			freepercent = temp[-1]
 
-			insertPartitionValue['imagename'] = path[-2]
+			insertPartitionValue['imagename'] = path[1]
 			insertPartitionValue['volumetype'] = volumetype
 			insertPartitionValue['format'] = format
 			insertPartitionValue['label'] = label
@@ -196,7 +197,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 	#initialize key values according to database column
 	insertApplicationValue = collections.OrderedDict.fromkeys(['imagename','appname'])
-	insertApplicationValue['imagename'] = path[-2]
+	insertApplicationValue['imagename'] = path[1]
 	
 	try:
 		#remove the "Application:" title
@@ -222,7 +223,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 			#reset values to be inserted
 			insertApplicationValue = collections.OrderedDict.fromkeys(['imagename','appname'])
-			insertApplicationValue['imagename'] = path[-2]
+			insertApplicationValue['imagename'] = path[1]
 
 	except (ValueError,IndexError) as e:
 		logger.error("SystemProblem finding 'Host', 'Name:' headers due to " + str(e))
@@ -261,7 +262,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 														   'procid',
 														   'description'])
 
-	insertProcdesValue['imagename'] = path[-2]
+	insertProcdesValue['imagename'] = path[1]
 
 	#Process entries before the line containing 'BIOS', 'Version:'
 	try:
@@ -403,7 +404,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 	#initialize key values according to database column
 	insertHotfixValue = collections.OrderedDict.fromkeys(['imagename','totalnum','hotfixid','description'])
-	insertHotfixValue['imagename'] = path[-2]
+	insertHotfixValue['imagename'] = path[1]
 
 	try:
 		while fileBuffer[0][0:2] != ['Network', 'Card(s):']:
@@ -445,7 +446,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 				#reset values to be inserted
 				insertHotfixValue = collections.OrderedDict.fromkeys(['imagename','totalnum','hotfixid','description'])
-				insertHotfixValue['imagename'] = path[-2]
+				insertHotfixValue['imagename'] = path[1]
 				insertHotfixValue['totalnum'] = int(hotfixtotalnum)
 
 	except (ValueError,IndexError) as e:
@@ -459,7 +460,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 	#initialize key values according to database column
 	insertNICValue = collections.OrderedDict.fromkeys(['imagename','nicid','nictype','connectionname','dhcpenabled','totalinstalled','status','dhcpserver'])
-	insertNICValue['imagename'] = path[-2]
+	insertNICValue['imagename'] = path[1]
 
 	try:
 		while fileBuffer[0][0:2] != ['Hyper-V', 'Requirements:']:
@@ -559,7 +560,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 							Table = "triage_sysinfo_nicip"
 
 							insertNICIPValue = collections.OrderedDict.fromkeys(['imagename','ipid','ipadd','nicid'])
-							insertNICIPValue['imagename'] = path[-2]
+							insertNICIPValue['imagename'] = path[1]
 							insertNICIPValue['nicid'] = nicid
 
 							try:
@@ -616,7 +617,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 				#reset values to be inserted
 				insertNICValue = collections.OrderedDict.fromkeys(['imagename','nicid','nictype','connectionname','dhcpenabled','totalinstalled','status','dhcpserver'])
-				insertNICValue['imagename'] = path[-2]
+				insertNICValue['imagename'] = path[1]
 				insertNICValue['totalinstalled'] = int(nictotalinstalled)
 
 	except (ValueError,IndexError) as e:

@@ -1,11 +1,12 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Triage Processes.txt'
 
 import collections
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 import logging
 logger = logging.getLogger('root')
 
@@ -21,8 +22,8 @@ def parseAndPopulate(databaseConnectionHandle, filename):
     logger.debug("filename is " + filename + "\n")
 
     fileBuffer = fp.dequeFile(filename)
-
-    path = filename.split('\\')
+    #directory, imagename
+    path = os.path.split(os.path.split(filename)[0])
 
     try:
         #Skip thru the buffer until the title line
@@ -73,7 +74,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
             insertValue = collections.OrderedDict.fromkeys(['imagename', 'procname', 'pid', 'services'])
 
-            insertValue['imagename'] = path[-2]
+            insertValue['imagename'] = path[1]
 
             if pid.isdigit():
                     insertValue['pid'] = pid
@@ -161,7 +162,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
                 insertValue = collections.OrderedDict.fromkeys(['imagename', 'procname', 'pid','pri','thd','hnd','priv', 'cputime', 'elapsedtime'])
 
                 #Need to process directory and get directory name as the imagename
-                insertValue['imagename'] = path[-2]
+                insertValue['imagename'] = path[1]
                 insertValue['procname'] = procname
                 insertValue['pid'] = pid
 
@@ -241,7 +242,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
                 whereValue = collections.OrderedDict.fromkeys(['imagename','pid','priv'])
 
                 #Need to process directory and get directory name as the imagename
-                whereValue['imagename'] = path[-2]
+                whereValue['imagename'] = path[1]
 
                 if pid.isdigit():
                     whereValue['pid'] = pid

@@ -1,11 +1,12 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Volatility plugin envars'
 
 import collections
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 import logging
 logger = logging.getLogger('root')
 
@@ -22,7 +23,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('\\')
+    path = os.path.split(os.path.split(os.path.split(filename)[0])[0])
     
     #To prevent duplicate entries
     tempPathList = []
@@ -133,14 +134,11 @@ def parseAndPopulate(databaseConnectionHandle, filename):
         insertValue = collections.OrderedDict.fromkeys(['imagename','pid','procname','block','variable','pathvalue'])
 
         #Searching for triage naming convention for evidence whereby "Incident_" is always in the name. This is the imagename.
-        for tempImageName in path:
-            if "Incident_" in tempImageName:
-                break
-        insertValue['imagename'] = tempImageName
+        insertValue['imagename'] = path[1]
 
         #Initializing variables for table mem_envars_path
         insertPathValue = collections.OrderedDict.fromkeys(['imagename', 'path'])
-        insertPathValue['imagename'] = tempImageName
+        insertPathValue['imagename'] = path[1]
 
         if pid.isdigit():
             insertValue['pid'] = pid

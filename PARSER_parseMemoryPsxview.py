@@ -1,11 +1,12 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Memory PSXView'
 
 import collections
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 import logging
 logger = logging.getLogger('root')
 
@@ -20,7 +21,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('\\')
+    path = os.path.split(os.path.split(os.path.split(filename)[0])[0])
 
     #Skip thru the buffer until the title line
     while fileBuffer[0] != ['Offset(P)', 'Name', 'PID', 'pslist', 'psscan', 'thrdproc', 'pspcid', 'csrss', 'session', 'deskthrd', 'ExitTime']:
@@ -198,12 +199,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
             insertValue = collections.OrderedDict.fromkeys(['imagename', 'offsetp', 'procname', 'pid','pslist','psscan','thrdproc', 'pspcid', 'csrss', 'session', 'deskthrd', 'exit'])
 
-            #Searching for triage naming convention for evidence whereby "Incident_" is always in the name. This is the imagename.
-            for tempImageName in path:
-                if "Incident_" in tempImageName:
-                    break
-            insertValue['imagename'] = tempImageName   
-            
+            insertValue['imagename'] = path[1]          
             insertValue['offsetp'] = offsetp
             insertValue['procname'] = procname
 

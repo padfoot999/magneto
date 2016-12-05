@@ -1,4 +1,5 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Triage Network Connections.txt'
 
 import collections
@@ -7,7 +8,7 @@ import sys
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 
 import logging
 logger = logging.getLogger('root')
@@ -42,7 +43,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('\\')
+    path = os.path.split(os.path.split(filename)[0])
     logger.debug("PATH is " + str(path))
     logger.debug("imagename is " + str(path[-2]))
 
@@ -73,7 +74,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
             #iniatlizing dictionary to store data for inserting into database
             insertValue = collections.OrderedDict.fromkeys(['imagename', 'protocol','source', 'sourceport', 'destination', 'destinationport', 'state', 'pid'])
-            insertValue['imagename'] = path[-2]
+            insertValue['imagename'] = path[1]
             insertValue['protocol'] = temp[0]
 
             try:

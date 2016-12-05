@@ -1,11 +1,12 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Triage System Variables.txt'
 
 import collections
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 import logging
 logger = logging.getLogger('root')
 
@@ -22,7 +23,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
 	fileBuffer = fp.dequeFile(filename)
 
-	path = filename.split('\\')
+	path = os.path.split(os.path.split(filename)[0])
 
 	#To prevent duplicate entries
 	tempPathList = []
@@ -39,7 +40,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 													'__compat_layer'])
 
 
-	insertValue['imagename'] = path[-2]
+	insertValue['imagename'] = path[1]
 	#To prevent duplicate entries
 	insertPathValueList = []
 

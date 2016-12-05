@@ -1,4 +1,5 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Memory PSList'
 
 import collections
@@ -33,7 +34,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('\\')
+    path = os.path.split(os.path.split(os.path.split(filename)[0])[0])
 
     #Skip thru the buffer until the title line
     while fileBuffer[0] != ['Offset(V)', 'Name', 'PID', 'PPID', 'Thds', 'Hnds', 'Sess', 'Wow64', 'Start', 'Exit']:
@@ -228,11 +229,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
             insertValue = collections.OrderedDict.fromkeys(['imagename', 'offsetv', 'procname', 'pid','ppid','thds','hnds','sess', 'wow64', 'start', 'exit'])
 
             #Searching for triage naming convention for evidence whereby "Incident_" is always in the name. This is the imagename.
-            for tempImageName in path:
-                if "Incident_" in tempImageName:
-                    break
-            insertValue['imagename'] = tempImageName   
-
+            insertValue['imagename'] = path[1]
             insertValue['offsetv'] = offsetv
             insertValue['procname'] = procname
 
@@ -296,7 +293,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
                 logger.debug("insertValue is " + str(insertValue) + "\n")
                 db.databaseInsert(databaseConnectionHandle,Schema,Table,insertValue)
-
+                
             #Reset
             insertValue = collections.OrderedDict.fromkeys(['imagename', 'offsetv', 'procname', 'pid','ppid','thds','hnds','sess', 'wow64', 'start', 'exit'])
 

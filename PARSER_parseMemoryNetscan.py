@@ -1,4 +1,5 @@
 #!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
 __description__ = 'Parse saved text result from Memory Volatility netscan plugin output *-memory-netscan.txt'
 
 import collections
@@ -9,7 +10,7 @@ import logging
 import IO_databaseOperations as db
 import IO_fileProcessor as fp
 from config import CONFIG
-
+import os
 import logging
 logger = logging.getLogger('root')
 
@@ -24,7 +25,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     fileBuffer = fp.dequeFile(filename)
 
-    path = filename.split('\\')
+    path = os.path.split(os.path.split(os.path.split(filename)[0])[0])
     logger.info("PATH is " + str(path))    
 
     try:
@@ -54,10 +55,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
             insertValue = collections.OrderedDict.fromkeys(['imagename', 'protocol','source', 'sourceport', 
                 'destination', 'destinationport', 'state', 'pid', 'owner','timecreated','memoryoffset'])
             
-            for tempImageName in path:                
-                if "Incident_" in tempImageName:
-                    break
-            insertValue['imagename'] = tempImageName
+            insertValue['imagename'] = path[1]
             
             insertValue['memoryoffset'] = temp[0]
             if temp[1] == "UDPv4" or temp[1] == "UDPv6":
