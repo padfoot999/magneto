@@ -27,7 +27,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 
     try:
         #Skip thru the buffer until the title line
-        while fileBuffer[0] != ['Image', 'Name', 'PID', 'Services']:
+        while fileBuffer[0] != ['Image', 'Name', 'PID', 'Services'] and fileBuffer[0] != ['Image', 'Name', 'PID', 'Modules']:
             fileBuffer.popleft()
 
     except (ValueError,IndexError) as e:
