@@ -15,11 +15,11 @@ import logging
 logger = logging.getLogger('root')
 
 def processMemory(rawMemoryFilePath):
-
-
+    date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
     #Path to vol.py binary
-    #VOLATILITY_PATH = "/usr/bin/vol.py"
+    #VOLATILITY_PATH = "/usr/bin/volatility.py"
     VOLATILITY_PATH = "/opt/volatility/vol.py"
+    #VOLATILITY_PATH = "C:\\Users\\jtanadi\\Desktop\\magneto v2\\Tools\\volatility\\vol.py"
 
     #Profiles supported by above version of volatility
     SUPPORTED_WINDOWS_PROFILES = [
@@ -59,7 +59,7 @@ def processMemory(rawMemoryFilePath):
 
 
     logger.info(str(rawMemoryFilePath))
-
+    profileCount = 0
     unprocessedlist = []
     # traverse root directory, and list directories as dirs and files as files
     for root, dirs, files in os.walk(rawMemoryFilePath):
@@ -72,8 +72,6 @@ def processMemory(rawMemoryFilePath):
 
     logger.debug("This is the full list " + str(unprocessedlist))
     for memDumpFile in unprocessedlist:
-
-        
         #Running imageinfo to get Windows profile automatically. Assuming last profile is the correct one.
         #It would be faster to get the profile from triage info based on the hostname
         
@@ -82,18 +80,26 @@ def processMemory(rawMemoryFilePath):
         
         #COMMENTED OUT TO SPEED UP TESTING!
         proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-        with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-imageinfo.txt', 'w') as file:
+        with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-imageinfo.txt', 'w') as file:
             for line in proc.stdout:
                 file.write(line)
                 if "Suggested Profile" in line:
-                    profile = line.split()[3]
-                    profile = profile.rstrip(',')
+                    profiles = line.split(' : ', 1)[1]
+                    profile = profiles.split(', ')[0]
                     logger.info("The identified profile is " + profile)
                     if not profile in SUPPORTED_WINDOWS_PROFILES:
                         logger.error("The identified profile of " + profile + " is NOT supported")
                         sys.exit()
             #ZFZFTOD: Should we save this to another csv file? Or save to database? 
-            logger.info("The identified profile is " + profile)
+            #logger.info("The identified profile is " + profile)
+
+        # with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-kdbginfo.txt', 'w') as file:
+        #     proc = subprocess.call(['python', VOLATILITY_PATH, 'kdbgscan', '-f', memDumpFile, '--profile=', profile], stdout=file)
+        #     for line in file:
+        #         if "_KDBG: V" in line:
+        #             kdbg = line.split('_KDBG: V ', 1)[1]
+        #             kdbg = kdbg.split(' ',1)[0]
+        #             logger.info("The identified kdbg is " + kdbg)
         
         # profile = "Win7SP0x86"
 
@@ -135,12 +141,26 @@ def processMemory(rawMemoryFilePath):
                              'csrss.exe',
                              'smss.exe',
                              'HOSTNAME.EXE']
-        
+
+        profileCheck = profiles.split(', ')
+        profileBool = False
+        while not profileBool:
+            log_command = 'python ' + VOLATILITY_PATH + ' -f ' + '"' + memDumpFile + '"' + ' psxview --profile=' + profileCheck[profileCount]
+            proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
+            for line in proc.stdout:
+                if "No suitable address space mapping found" in line:
+                    profileBool = False
+                    break
+                else:
+                    profileBool = True
+            profile = profileCheck[profileCount]
+            profileCount += 1
+
         log_command = 'python ' + VOLATILITY_PATH + ' -f ' + '"' + memDumpFile + '"' + ' psxview --profile=' + profile
         logger.info(log_command) 
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-psxview.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-psxview.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
                     if "False" in line:
@@ -148,7 +168,7 @@ def processMemory(rawMemoryFilePath):
                         if not process_name in whitelist_psxview:
                             pid = line.split()[2]                  
                             logger.info("MEMORY - Possible DKOM Detected: " + process_name + " " + pid)
-                            #ZFZFTOD: Should we save this to another csv file? Or save to database? 
+                            #ZFZFTOD: Should we save this to another csv file? Or save to database?                       
         except (ValueError,IndexError) as e:
             logger.error("ERROR SystemInfo: Problem running psxview due to " + str(e))
             pass
@@ -159,7 +179,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-pslist.txt', 'w') as file:        
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-pslist.txt', 'w') as file:        
                 line_count = 0
                 firstCachedLine = ""
                 for line in proc.stdout:
@@ -197,7 +217,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command) 
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-pstree.txt', 'w') as file:        
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-pstree.txt', 'w') as file:        
                 for line in proc.stdout:
                     file.write(line)
                     temp_process_name = line.split()[0]
@@ -259,7 +279,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command) 
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-envars.txt', 'w') as file:        
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-envars.txt', 'w') as file:        
                 for line in proc.stdout:
                     file.write(line)
 
@@ -300,7 +320,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command) 
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-dlllist.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-dlllist.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
 
@@ -328,7 +348,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command) 
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-handles-File.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-handles-File.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)            
                     if "\Device\Mup\;" in line:
@@ -350,7 +370,7 @@ def processMemory(rawMemoryFilePath):
             logger.info(log_command) 
             try:
                 proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-                with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-sockets.txt', 'w') as file:
+                with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-sockets.txt', 'w') as file:
                     for line in proc.stdout:
                         file.write(line)                
                         if not "PID" in line:
@@ -367,7 +387,7 @@ def processMemory(rawMemoryFilePath):
             logger.info(log_command)
             try:
                 proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-                with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-sockscan.txt', 'w') as file:
+                with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-sockscan.txt', 'w') as file:
                     for line in proc.stdout:
                         file.write(line)             
                         if not "PID" in line:
@@ -393,7 +413,7 @@ def processMemory(rawMemoryFilePath):
             logger.info(log_command)
             try:
                 proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-                with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-netscan.txt', 'w') as file:
+                with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-netscan.txt', 'w') as file:
                     for line in proc.stdout:
                         file.write(line)            
             except (ValueError,IndexError) as e:
@@ -406,7 +426,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-ldrmodules.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-ldrmodules.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)            
                     inload_status = line.split()[3]
@@ -433,7 +453,7 @@ def processMemory(rawMemoryFilePath):
             logger.info(log_command)
             try:
                 proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-                with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-printkeyRun.txt', 'w') as file:
+                with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-printkeyRun.txt', 'w') as file:
                     for line in proc.stdout:
                         file.write(line)        
                         if "REG_" in line:
@@ -447,7 +467,7 @@ def processMemory(rawMemoryFilePath):
             logger.info(log_command)
             try:
                 proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-                with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-printkeyRunonce.txt', 'w') as file:
+                with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-printkeyRunonce.txt', 'w') as file:
                     for line in proc.stdout:
                         file.write(line)                        
                         if "REG_" in line:
@@ -473,7 +493,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-svcscan.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-svcscan.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)                      
                     if "Process ID:" in line:
@@ -501,7 +521,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-idt.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-idt.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)    
 
@@ -525,7 +545,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-ssdt.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-ssdt.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
 
@@ -554,7 +574,7 @@ def processMemory(rawMemoryFilePath):
 
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-modules.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-modules.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
 
@@ -578,7 +598,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-modscan.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-modscan.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
 
@@ -600,7 +620,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-unloadedmodules.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-unloadedmodules.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
 
@@ -639,7 +659,7 @@ def processMemory(rawMemoryFilePath):
         logger.info(log_command)
         try:
             proc = subprocess.Popen(log_command, stdout=subprocess.PIPE, shell=True)
-            with open(os.path.dirname(memDumpFile) + "/" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S-') + '-memory-driverirp.txt', 'w') as file:
+            with open(os.path.dirname(memDumpFile) + "/" + date + '-memory-driverirp.txt', 'w') as file:
                 for line in proc.stdout:
                     file.write(line)
 
