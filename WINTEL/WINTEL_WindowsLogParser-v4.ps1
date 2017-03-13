@@ -339,7 +339,8 @@ function splitFiles($totalHits)
 
 function outputMsg ($msg, [int[]]$eventid) {
     $outputMsg = $msg+ "`r`n"
-    $logfile = Get-Content "F:\magneto v2\results\ARGON\Logs-20170117115741 - STEVEFOO-THINK Incident\EVENT COUNT LOG.txt"
+    $count = $parentPath + "\Results\" + $project + "\Logs-" + $imagename + "\EVENT COUNT LOG.txt"
+    $logfile = Get-Content $count
     $i=0
     $entry = New-Object PsObject
     do {
