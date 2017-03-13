@@ -16,6 +16,38 @@ WIP:
 4 ) Windows Log Parser 
 5 ) Windows malicious document identifier
 
+### Step by Step Guide to power up MAGNETO on Windows
+
+1. Download Magneto Files from "https://github.com/padfoot999/magneto"
+2. Install Python 2.7 (32 bit)
+3. Configure Python Path in Windows System Environment Variables
+4. Install PostgreSQL
+5. Go to PGAdmin, create server with the following setting
+        <br />Name: "magneto"
+        <br />Host name/Add: "127.0.0.1"
+        <br />User name: postgres
+        <br />Password: password
+6. After creating server, create database "magneto"
+7. Install all necessary python modules (i.e. Pandas, psycopg2) using pip
+8. Make sure that workstation has Powershell v4.0 and above installed
+9. Install strawberry perl 
+http://strawberryperl.com/
+10. Open command prompt and type: 
+cpan
+install Parse::Win32Registry
+
+### SOP for Triage Post-Processing
+
+1. Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Dump Volatility output into the Evidence folder within each Incident folder.
+2. Process Event Logs using Windows Powershell (WINTEL.ps1) file.
+3. Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
+4. Run submit.py file
+5. Run Baseline, ProcessDiff, ProcessNetworkConnections, AutoRunMerged, CVE Checker Python scripts
+6. Run Summary file
+
+## Dependencies for Windows
+
+
 ## Running Magneto Scripts
 
 ### Python Magneto
