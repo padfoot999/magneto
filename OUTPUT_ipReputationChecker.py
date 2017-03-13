@@ -457,8 +457,6 @@ def main():
     dbhandle = db.databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
     logging.info("INFO: dbhandle is " + str(dbhandle) + "\n")
 
-
-
     parser = argparse.ArgumentParser(description="Check IP address or hostname if it is blacklisted (against ipvoid.com)")
     parser.add_argument('-t', dest='ipOrHostname', type=str, required=True, help="IPv4 address or Hostname")        
     args = parser.parse_args()  

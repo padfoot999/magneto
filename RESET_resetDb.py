@@ -31,7 +31,7 @@ cursor.execute("DELETE FROM process_list.mem_pstree WHERE imagename > ''")
 cursor.execute("DELETE FROM process_list.mem_psxview WHERE imagename > ''")
 cursor.execute("DELETE FROM process_list.triage_processes WHERE imagename > ''")
 cursor.execute("DELETE FROM process_list.triage_processes_tree WHERE imagename > ''")
-
+cursor.execute("DELETE FROM process_list.wmi_processes WHERE imagename > ''")
 #project
 cursor.execute("DELETE FROM project.project_image_mapping WHERE projectname > ''")
 

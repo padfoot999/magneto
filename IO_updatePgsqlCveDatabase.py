@@ -19,10 +19,13 @@ import xlrd
 from datetime import datetime
 import re
 import sys
+import win_inet_pton
 from config import CONFIG
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 import logging
 logger = logging.getLogger('root')
@@ -33,10 +36,6 @@ logger = logging.getLogger('root')
 # and point to NVD cache folder (containing XML files extracted from the downloaded ZIP files)
 # filenames have the following structure e.g. nvdcve-2.0-2008.xml
 NVD_CACHE = CONFIG['CVE']['NVD_CACHE']
-
-import logging
-logger = logging.getLogger('root')
-
 
 #NAME: getMitreCveListings
 #INPUT: optional filepath of local allitems.csv as string
@@ -658,7 +657,7 @@ def main():
     dbhandle = db.databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
     #debug(DEBUG_FLAG, "INFO: dbhandle is " + str(dbhandle) + "\n")
 
-    insertCveDetails(dbhandle)
+    #insertCveDetails(dbhandle)
     insertWindowsPatchDetails(dbhandle)
 
 if __name__ == '__main__':

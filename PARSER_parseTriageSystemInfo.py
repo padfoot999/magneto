@@ -219,7 +219,8 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 				#Just let it fail elegantly for now
 				insertApplicationValue['appname'] = appname
 				logger.debug("insertApplicationValue is " + str(insertApplicationValue) + "\n")
-				db.databaseInsert(databaseConnectionHandle,Schema,Table,insertApplicationValue)
+				if appname is not None:
+					db.databaseInsert(databaseConnectionHandle,Schema,Table,insertApplicationValue)
 
 				#reset values to be inserted
 				insertApplicationValue = collections.OrderedDict.fromkeys(['imagename','appname'])

@@ -55,14 +55,15 @@ def databaseInitiate():
 
         databaseCursor.execute("CREATE TABLE process_list.triage_processes(imagename text, procname text, pid numeric, services text);")
         databaseCursor.execute("CREATE TABLE process_list.triage_processes_tree(imagename text, procname text, pid numeric, pri numeric, thd numeric, hnd numeric, priv numeric, cputime text, elapsedtime text, vm numeric, ws numeric);")
-        
+        databaseCursor.execute("CREATE TABLE process_list.wmi_processes(imagename text, procname text, pid numeric);")
         databaseCursor.execute("CREATE SCHEMA project;")
         databaseCursor.execute("CREATE TABLE project.project_image_mapping(projectname text, imagename text);")
         
         databaseCursor.execute("CREATE SCHEMA system;")
         databaseCursor.execute("CREATE TABLE system.triage_sysinfo(imagename text, uptime text, kernelversion text, producttype text, productversion numeric, servicepack numeric, kernelbuildnumber numeric, registeredorganization text, registeredowner text, ieversion numeric, systemroot text, processors numeric, processorspeed text, processortype text, physicalmemory text, videodriver text, hostname text, osname text, osversion text, osmanufacturer text, osconfiguration text, osbuildtype text, productid text, systemmanufacturer text, systemmodel text, systemtype text, biosversion text, procinstalled text, windowsdirectory text, systemdirectory text, bootdevice text, systemlocale text, inputlocale text, timezone text, totalphysicalmemory text, availablephysicalmemory text, virtualmemory_maxsize text, virtualmemory_available text, virtualmemory_inuse text, pagefilelocation text, domain text, logonserver text, vmmonitormodeextensions text, virtualizationenabledinfirmware text, secondleveladdresstranslation text, dataexecutionpreventionavailable text, systemboottime text, originalinstalldate text);")
+        databaseCursor.execute("CREATE TABLE system.triage_sysinfo_arp(imagename text, interface text, ipaddress text, macaddress text, type text);")
         databaseCursor.execute("CREATE TABLE system.triage_sysinfo_applications(imagename text, appname text);")
-        databaseCursor.execute("CREATE TABLE system.triage_sysinfo_hotfix(    imagename text, totalnum numeric, hotfixid text, description text);")
+        databaseCursor.execute("CREATE TABLE system.triage_sysinfo_hotfix(imagename text, totalnum numeric, hotfixid text, description text);")
         databaseCursor.execute("CREATE TABLE system.triage_sysinfo_nic(imagename text, nicid integer, nictype text, connectionname text, dhcpenabled text, totalinstalled integer, status character varying, dhcpserver character varying);")
         databaseCursor.execute("CREATE TABLE system.triage_sysinfo_nicip(imagename text, ipid numeric, ipadd text, nicid integer);")
         databaseCursor.execute("CREATE TABLE system.triage_sysinfo_partitions(imagename text, volumetype text, format text, label text, size text, free text, freepercent text);")
@@ -248,7 +249,8 @@ def databaseWhitelist(databaseConnectionHandle, project, databaseSchema, databas
 
     query = "SELECT DISTINCT "
     query += groupTransaction + ", COUNT (DISTINCT "
-    query += columnCounted + ") "
+    query += columnCounted + ") AS Count, "
+    query +=  "string_agg(DISTINCT " + columnCounted + ", ', ') AS IncidentFolder_List "
     query += "FROM " + databaseSchema + "." + databaseTable
     query += " WHERE imagename IN (SELECT DISTINCT imagename FROM project.project_image_mapping WHERE projectname='" + project + "')"
     query += " GROUP BY " + groupTransaction
@@ -268,8 +270,6 @@ def databaseWhitelist(databaseConnectionHandle, project, databaseSchema, databas
     rows = cur.fetchall()
     databaseConnectionHandle.commit()
     return rows
-
-
 
 #NAME: main
 #INPUT: NONE

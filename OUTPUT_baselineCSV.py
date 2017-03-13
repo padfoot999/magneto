@@ -26,16 +26,25 @@ def compareMemTriage(databaseConnectionHandle, project):
 	psycopg2.extensions.string_types.clear()
 	date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
 
+	#Check if results folder exist, if not, create it.
 	dir = os.getcwd()
-    resultsDir = dir + "/results"
-    if not os.path.exists(resultsDir):
-        try:
-            os.makedirs(resultsDir)
-        except:
-            logging.error("Unable to create results folder")
-            sys.exit()
+	resultsDir = dir + "/Results"
+	if not os.path.exists(resultsDir):
+		try:
+			os.makedirs(resultsDir)
+		except:
+			logging.error("Unable to create results folder")
+			sys.exit()
 
-	with open('./results/' + date + '-compareMemTriage-' + project + '.txt', 'wb') as file:
+	projResultsDir = dir + "/Results/" + project 
+	if not os.path.exists(projResultsDir):
+		try:
+			os.makedirs(projResultsDir)
+		except:
+			logging.error("Unable to create Project results folder")
+			sys.exit()
+	
+	with open('./results/' + project + '/' + date + '-compareMemTriage' + '.txt', 'wb') as file: 
 		
 		#list all images for the specified project
 		cur = databaseConnectionHandle.cursor()
@@ -128,7 +137,7 @@ def baseline(databaseConnectionHandle, project):
 	try:        
 		mem_envars_path = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)        
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-		with open('./results/' + date + '-baseline-mem_envars_path.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-mem_envars_path.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(mem_envars_path)
 	except:
@@ -146,7 +155,7 @@ def baseline(databaseConnectionHandle, project):
 	try:
 		sys_variables_path = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-		with open('./results/' + date + '-baseline-triage_sysvariables_path.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-triage_sysvariables_path.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(triage_sysvariables_path)
 	except:
@@ -163,8 +172,7 @@ def baseline(databaseConnectionHandle, project):
 	try:
 		application = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)    
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-
-		with open('./results/' + date + '-baseline-triage_sysinfo_applications.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-triage_sysinfo_applications.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(application)           
 	except:
@@ -182,7 +190,7 @@ def baseline(databaseConnectionHandle, project):
 		#Note that this has an additional param to databaseWhitelist to sort in ascending order
 		hotfix = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy, 1)
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-		with open('./results/' + date + '-baseline-triage_sysinfo_hotfix.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-triage_sysinfo_hotfix.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(hotfix)
 	except:
@@ -199,7 +207,7 @@ def baseline(databaseConnectionHandle, project):
 	try:
 		mem_pslist = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-		with open('./results/' + date + '-baseline-mem_pslist.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-mem_pslist.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(mem_pslist)      
 	except:
@@ -216,7 +224,7 @@ def baseline(databaseConnectionHandle, project):
 	try:
 		mem_pstree = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-		with open('./results/' + date + '-baseline-mem_pslist.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-mem_pstree.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(mem_pstree)  
 	except:
@@ -234,7 +242,7 @@ def baseline(databaseConnectionHandle, project):
 	try:
 		mem_psxview = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-		with open('./results/' + date + '-baseline-mem_psxview.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-mem_psxview.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(mem_psxview) 
 	except:        
@@ -252,8 +260,7 @@ def baseline(databaseConnectionHandle, project):
 	try:
 		triage_processes = db.databaseWhitelist(databaseConnectionHandle, project, Schema, Table, groupBy, countBy)
 		date = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-
-		with open('./results/' + date + '-baseline-triage_processes.csv', 'w') as file:
+		with open('./Results/' + project + '/' + date + '-baseline-triage_processes.csv', 'w') as file:
 			writer = csv.writer(file)
 			writer.writerows(triage_processes)
 	except:

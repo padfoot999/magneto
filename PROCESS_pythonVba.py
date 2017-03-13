@@ -54,7 +54,7 @@ def retrieve(cell, sheet):
 
 	#Finds for latest copy of Sys Info Nic IP Merge File
 	hostinfofile = ""
-	resultsDirectory = directory + "\\results"
+	resultsDirectory = projectDirectory
 	for root, dirs, files in os.walk(resultsDirectory):
 		files.sort()
 		for filename in files:

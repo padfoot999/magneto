@@ -1,5 +1,5 @@
 #copy and paste file to results folder
-#Go to second tab (i.e. USB) 
+#Go to second tab (i.e. USB)
 #Find for specific csv and paste into excel spreadsheet (i.e. same as PARSER or submit)
 
 #rename to Incidents folder
@@ -25,8 +25,8 @@ import chardet
 import subprocess
 import numpy as np
 
-import sys  
-reload(sys)  
+import sys
+reload(sys)
 sys.setdefaultencoding('utf8')
 
 from config import CONFIG
@@ -39,16 +39,19 @@ logger = logging.getLogger('root')
 #NAME:process
 #INPUT: database connection handle, directory to evidence files
 #OUTPUT: NONE
-#DESCRIPTION:   
-def outputSummary(directory):
+#DESCRIPTION:
+def outputSummary(directory, projectname, results):
 	imgname = os.path.split(directory)[1]
 	timestamp = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-	workbook = load_workbook(filename= 'MAGNETO_Host_Analysis_Checklist_Results_template2.xlsx') 
-	writer = pd.ExcelWriter('./results/' + timestamp + '_' + imgname + '_Summary.xlsx', engine='openpyxl')
+	workbook = load_workbook(filename= 'MAGNETO_Host_Analysis_Checklist_Results_template2.xlsx')
+	writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', engine='openpyxl')
 	writer.book = workbook
 	writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
+	writer.save()
 
-	unprocessedlist = [] 
+	unprocessedlist = []
+	jmpRowCount = 2
+	recentRowCount = 2
 
 	# traverse root directory, and list directories as dirs and files as files
 	for root, dirs, files in os.walk(directory):
@@ -57,97 +60,109 @@ def outputSummary(directory):
 		# logger.info("files is " + str(files))
 		for filename in files:
 			#Queueing all triage output files for processing. Once processed, they are removed
-			if str(os.path.join(root,filename)) not in unprocessedlist:             
+			if str(os.path.join(root,filename)) not in unprocessedlist:
 				unprocessedlist.append(os.path.join(root,filename))
-	
+
+	#For logon accounts that is output in results folder - specific to each custodian
+	for root, dirs, files in os.walk(results):
+		for filename in files:
+			pathFile = str(os.path.join(root,filename))
+			if "-Logon Accounts.csv" in pathFile and imgname in pathFile:
+				unprocessedlist.append(os.path.join(root,filename))
+
+
 	fileExecution = pd.DataFrame()
 	fileOpening = pd.DataFrame()
 	for rawFile in unprocessedlist:
 		if "USBParser.xlsx" in rawFile:
 			usbResults = pd.read_excel(rawFile, sheetname=0)
+			usbResults = clean(usbResults, list(usbResults))
 			usbResults.to_excel(writer, sheet_name="USB", index=False)
 
 		if "FileExecutionParser.xlsx" in rawFile:
-			fileExecutionResults = pd.read_excel(rawFile, sheetname=0)
-			fileExecution = fileExecution.append(fileExecutionResults)
+			#fileExecutionResults = pd.read_excel(rawFile, header=None, parse_cols=15,sheetname=0, names=['Path','Last Modified','Last Update','Size','Exec Flag','Path_1','Launch Location_1','Last Execution_1','User_1','File Name_2','File Path_2','MRU List EX Order_2','User_2','Program Name_3','User_3'])
+			fileExecutionResults = pd.read_excel(rawFile, header=0, sheetname=0)
+			#fileExecutionResults = fileExecutionResults.applymap(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x,str) else x)
+			#fileExecutionResults = fileExecutionResults.replace(r'\s+', np.nan, regex=True)
+			fileExecutionResults = clean(fileExecutionResults, list(fileExecutionResults))
+			fileExecutionResults.to_excel(writer,sheet_name="File Execution",startcol=10,index=False,header=False,startrow=2)
 
 		if "FileOpeningParser.xlsx" in rawFile:
-			fileOpeningResults = pd.read_excel(rawFile, sheetname=0)
-			fileOpening = fileOpening.append(fileOpeningResults)
+			#fileOpeningResults = pd.read_excel(rawFile, header=None, sheetname=0, names=['File Name','MRU List EX Order','Extension','User','File Path_1','MRU List EX Order_1','Extension_1','Last Execution_1','User_1','File Name_2','File Path_2','MRU List EX Order_2','User_2','File Path_3','MRU List EX Order_3','Extension_3','User_3'])
+			fileOpeningResults = pd.read_excel(rawFile, header=0, sheetname=0)
+			#fileOpeningResults = fileOpeningResults.replace(r'\s+', np.nan, regex=True)
+			fileOpeningResults = clean(fileOpeningResults, list(fileOpeningResults))
+			fileOpeningResults.to_excel(writer,sheet_name="File or Folder Opening",startcol=15,index=False,header=False,startrow=2)
 
 		if "Prefetch Info.csv" in rawFile:
 			prefetch = pd.DataFrame()
-			prefetch2 = pd.DataFrame()
 			rawdata = open(rawFile, "r").read()
 			result = chardet.detect(rawdata)
 			charenc = result['encoding']
 			rawprefetch = pd.read_csv(rawFile, encoding=charenc, skiprows=1,names=['Filename','Created Time','Modified Time','File Size','Process EXE','Process Path','Run Counter','Last Run Time','Missing Process'])
+
 			rawprefetch['Last Run Time'] = pd.to_datetime(rawprefetch['Last Run Time'], dayfirst=True)
 			prefetch['Source File'] = rawprefetch['Filename']
-			prefetch['Path'] = rawprefetch['Process Path']
-			prefetch['Program Name'] = rawprefetch['Process EXE']
+			prefetch['File Path'] = rawprefetch['Process Path']
+			prefetch['File Name'] = rawprefetch['Process EXE']
 			prefetch['Last Execution'] = rawprefetch['Last Run Time']
-			prefetch['Source'] = "Prefetch"
-			prefetch2['Source File'] = rawprefetch['Filename']
-			prefetch2['File Path'] = rawprefetch['Process Path']
-			prefetch2['File Name'] = rawprefetch['Process EXE']
-			prefetch2['Last Execution'] = rawprefetch['Last Run Time']
-			prefetch2['Source'] = "Prefetch"
-			prefetch = prefetch.drop_duplicates(subset="Path")
-			prefetch2 = prefetch2.drop_duplicates(subset="File Path")
-			fileExecution = fileExecution.append(prefetch)
-			fileOpening = fileOpening.append(prefetch2)
+
+			prefetch = clean(prefetch, list(prefetch))
+			prefetch = prefetch.drop_duplicates(subset="File Path")
+			prefetch.to_excel(writer,sheet_name="File or Folder Opening",startcol=0,index=False,header=False,startrow=2)
+			prefetch.to_excel(writer,sheet_name="File Execution",startcol=0,index=False,header=False,startrow=2)
 
 		if "_AutomaticDestinations.tsv" in rawFile:
+			currentautolist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="E:J",header=1)
+			openLastRow = jmpRowCount
+			
 			jmplist = pd.DataFrame()
-			jmplist2 = pd.DataFrame()
 			rawdata = open(rawFile, "r").read()
 			result = chardet.detect(rawdata)
 			charenc = result['encoding']
-			rawjmplist = pd.read_csv(rawFile, sep='|', encoding=charenc, skiprows=2,names=['SourceFile','SourceCreated','SourceModified','SourceAccessed','AppId','AppIdDescription','DestListVersion','LastUsedEntryNumber','EntryNumber','CreationTime','LastModified','Hostname','MacAddress','Path','PinStatus','FileBirthDroid','FileDroid','VolumeBirthDroid','VolumeDroid','TargetCreated','TargetModified','TargetAccessed','FileSize','RelativePath','WorkingDirectory','FileAttributes','HeaderFlags','DriveType','DriveSerialNumber','DriveLabel','LocalPath','CommonPath','TargetIDAbsolutePath','TargetMFTEntryNumber','TargetMFTSequenceNumber','MachineID','MachineMACAddress','TrackerCreatedOn','ExtraBlocksPresent','Arguments','Notes','Robocopy File Name'])
-			jmplist['Source File'] = rawjmplist['SourceFile']
-			jmplist['Path'] = rawjmplist['Path']
-			jmplist['Program Name'] = rawjmplist['AppIdDescription']
-			jmplist['User'] = os.path.split(os.path.dirname(rawFile))[1]
-			jmplist['Last Execution'] = rawjmplist['LastModified']
-			jmplist['Source'] = "Automatic Destination (JMP Files)"
-			jmplist2['Source File'] = rawjmplist['SourceFile']
-			jmplist2['File Path'] = rawjmplist['Path']
-			jmplist2['File Name'] = rawjmplist['AppIdDescription']
-			jmplist2['User'] = os.path.split(os.path.dirname(rawFile))[1]
-			jmplist2['Last Execution'] = rawjmplist['LastModified']
-			jmplist2['Source'] = "Automatic Destination (JMP Files)"
-			jmplist = jmplist.drop_duplicates(subset="Path")
-			jmplist2 = jmplist2.drop_duplicates(subset="File Path")
-			fileExecution = fileExecution.append(jmplist)
-			fileOpening = fileOpening.append(jmplist2)
+			rawjmplist = pd.read_csv(rawFile, sep='\t', encoding=charenc, skiprows=1,names=['SourceFile','SourceCreated','SourceModified','SourceAccessed','AppId','AppIdDescription','DestListVersion','LastUsedEntryNumber','EntryNumber','CreationTime','LastModified','Hostname','MacAddress','Path','PinStatus','FileBirthDroid','FileDroid','VolumeBirthDroid','VolumeDroid','TargetCreated','TargetModified','TargetAccessed','FileSize','RelativePath','WorkingDirectory','FileAttributes','HeaderFlags','DriveType','DriveSerialNumber','DriveLabel','LocalPath','CommonPath','TargetIDAbsolutePath','TargetMFTEntryNumber','TargetMFTSequenceNumber','MachineID','MachineMACAddress','TrackerCreatedOn','ExtraBlocksPresent','Arguments','Notes','Robocopy File Name'])
+			
+			if not rawjmplist.empty:
+				jmpRowCount += len(rawjmplist.index)
+				jmplist['Source File'] = rawjmplist['SourceFile']
+				jmplist['File Path'] = rawjmplist['Path']
+				jmplist['File Name'] = rawjmplist['AppIdDescription']
+				jmplist['User'] = os.path.split(os.path.dirname(rawFile))[1]
+				jmplist['Last Execution'] = rawjmplist['LastModified']
+				jmplist['Source'] = "Automatic"
+
+				jmplist = clean(jmplist, list(jmplist))
+				jmplist.to_excel(writer,sheet_name="File or Folder Opening",startcol=4,index=False,header=False,startrow=openLastRow)
+				jmplist.to_excel(writer,sheet_name="File Execution",startcol=4,index=False,header=False,startrow=openLastRow)
 
 		if "_CustomDestinations.tsv" in rawFile:
+			currentcustomlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="E:J",header=1)
+			openLastRow = jmpRowCount
+
 			jmplist = pd.DataFrame()
-			jmplist2 = pd.DataFrame()
 			rawdata = open(rawFile, "r").read()
 			result = chardet.detect(rawdata)
 			charenc = result['encoding']
-			rawjmplist = pd.read_csv(rawFile, sep='|', encoding=charenc, skiprows=2,names=['SourceFile','SourceCreated','SourceModified','SourceAccessed','AppId','AppIdDescription','EntryName','TargetCreated','TargetModified','TargetAccessed','FileSize','RelativePath','WorkingDirectory','FileAttributes','HeaderFlags','DriveType','DriveSerialNumber','DriveLabel','LocalPath','CommonPath','TargetIDAbsolutePath','TargetMFTEntryNumber','TargetMFTSequenceNumber','MachineID','MachineMACAddress','TrackerCreatedOn','ExtraBlocksPresent','Arguments','Robocopy File Name'])
-			jmplist['Source File'] = rawjmplist['SourceFile']
-			jmplist['Path'] = rawjmplist['LocalPath']
-			jmplist['Program Name'] = rawjmplist['AppIdDescription']
-			jmplist['User'] = os.path.split(os.path.dirname(rawFile))[1]
-			jmplist['Last Execution'] = rawjmplist['SourceModified']
-			jmplist['Source'] = "Custom Destination (JMP Files)"
-			jmplist2['Source File'] = rawjmplist['SourceFile']
-			jmplist2['File Path'] = rawjmplist['LocalPath']
-			jmplist2['File Name'] = rawjmplist['AppIdDescription']
-			jmplist2['User'] = os.path.split(os.path.dirname(rawFile))[1]
-			jmplist2['Last Execution'] = rawjmplist['LastModified']
-			jmplist2['Source'] = "Custom Destination (JMP Files)"
-			jmplist = jmplist.drop_duplicates(subset="Path")
-			jmplist2 = jmplist2.drop_duplicates(subset="File Path")
-			fileExecution = fileExecution.append(jmplist)
-			fileOpening = fileOpening.append(jmplist2)
+			rawjmplist = pd.read_csv(rawFile, sep='\t', encoding=charenc, skiprows=1,names=['SourceFile','SourceCreated','SourceModified','SourceAccessed','AppId','AppIdDescription','EntryName','TargetCreated','TargetModified','TargetAccessed','FileSize','RelativePath','WorkingDirectory','FileAttributes','HeaderFlags','DriveType','DriveSerialNumber','DriveLabel','LocalPath','CommonPath','TargetIDAbsolutePath','TargetMFTEntryNumber','TargetMFTSequenceNumber','MachineID','MachineMACAddress','TrackerCreatedOn','ExtraBlocksPresent','Arguments','Robocopy File Name'])
+
+			if not rawjmplist.empty:
+				jmpRowCount += len(rawjmplist.index)
+				jmplist['Source File'] = rawjmplist['SourceFile']
+				jmplist['File Path'] = rawjmplist['LocalPath']
+				jmplist['File Name'] = rawjmplist['AppIdDescription']
+				jmplist['User'] = os.path.split(os.path.dirname(rawFile))[1]
+				jmplist['Last Execution'] = rawjmplist['SourceModified']
+				jmplist['Source'] = "Custom"
+
+				jmplist = clean(jmplist, list(jmplist))
+				jmplist.to_excel(writer,sheet_name="File or Folder Opening",startcol=4,index=False,header=False,startrow=openLastRow)
+				jmplist.to_excel(writer,sheet_name="File Execution",startcol=4,index=False,header=False,startrow=openLastRow)
 
 		pattern = re.compile(r'Recent LNKs\\[^\\]*\\[^\\]*\.csv')
 		if pattern.search(rawFile):
+			currentrecent = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="K:O",header=1)
+			openLastRow = recentRowCount
+
 			logger.info(rawFile)
 			recentlnk = pd.DataFrame()
 			rawdata = open(rawFile, "r").read()
@@ -155,14 +170,17 @@ def outputSummary(directory):
 			charenc = result['encoding']
 			try:
 				rawrecentlnk = pd.read_csv(rawFile, encoding=charenc, header=0)
+				recentRowCount += len(rawrecentlnk.index)
 				recentlnk['File Path'] = rawrecentlnk['Local Path']
 				recentlnk['File Path'].fillna(rawrecentlnk['Common Path'], inplace=True)
-				#recentlnk['Last Execution'] = rawrecentlnk['']
-				recentlnk['Source'] = "Recent LNKs"
 				usersearch = re.search(r'Recent LNKs\\(.*)\\.*\.csv', rawFile, re.IGNORECASE)
 				if usersearch:
 					recentlnk['User'] = usersearch.group(1)
-				fileOpening = fileOpening.append(recentlnk)
+				recentlnk['Last Accessed (UTC)'] = rawrecentlnk['Last Accessed (UTC)']
+				recentlnk['Date Created (UTC)'] = rawrecentlnk['Date Created (UTC)']
+				recentlnk['Last Modified (UTC)'] = rawrecentlnk['Last Modified (UTC)']
+				recentlnk = clean(recentlnk, list(recentlnk))
+				recentlnk.to_excel(writer,sheet_name="File or Folder Opening",startcol=10,index=False,header=False,startrow=openLastRow)
 			except:
 				logger.info(rawFile + " is empty")
 
@@ -193,26 +211,109 @@ def outputSummary(directory):
 			charenc = result['encoding']
 			logs = pd.read_csv(rawFile, encoding=charenc, header=0)
 			logs.to_excel(writer, sheet_name="Logged_on_accounts", index=False)
-	
-	fileExecution = clean(fileExecution, list(fileExecution))		
-	fileExecution.to_excel(writer,sheet_name="File Execution",index=False)
-	fileOpening = clean(fileOpening, list(fileOpening))
-	fileOpening.to_excel(writer,sheet_name="File or Folder Opening",index=False)
-
 	writer.save()
+
+	try: 
+		writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', engine='openpyxl')
+		writer.book = workbook
+		writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
+		fileExecutionColumn = ['Path','Program Name','Last Execution','Exec Flag','Source','Source File','User']
+		fileExecutionMerged = pd.DataFrame(columns=fileExecutionColumn)
+		fileOpeningColumn = ['File Path','File Name','Last Execution','Last Accessed (UTC)','Date Created (UTC)','Last Modified (UTC)','Source','Source File','User']
+		fileOpeningMerged = pd.DataFrame(columns=fileOpeningColumn)
+
+		prefetchlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File Execution', parse_cols="A:D",header=1)
+		prefetchlist = prefetchlist.dropna(how='all')
+		prefetchlist['Source'] = "Prefetch"
+		autocustomlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File Execution', parse_cols="E:J",header=1)
+		compatreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File Execution', parse_cols="K:O",header=1)
+		compatreg = compatreg.dropna(how='all')
+		compatreg['Source'] = "AppCompatCache"
+		userassistreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File Execution', parse_cols="P:S",header=1)
+		userassistreg = userassistreg.dropna(how='all')
+		userassistreg['Source'] = "UserAssist"
+		lastvisitreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File Execution', parse_cols="T:W",header=1)
+		lastvisitreg = lastvisitreg.dropna(how='all')
+		lastvisitreg['Source'] = "Last Visited MRU"
+		runreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File Execution', parse_cols="X:Y",header=1)
+		runreg = runreg.dropna(how='all')	
+		runreg['Source'] = "Run MRU"
+
+		fileExecutionList = [fileExecutionMerged,prefetchlist,autocustomlist,compatreg,userassistreg,lastvisitreg,runreg]
+		fileExecutionExcel = pd.DataFrame()
+		fileExecutionExcel = pd.concat(fileExecutionList, ignore_index=True)
+		fileExecutionExcel.to_excel(writer,sheet_name="MERGED_File Execution",index=False,header=False,columns=fileExecutionColumn,startrow=1)
+
+		prefetchlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="A:D",header=1)
+		prefetchlist = prefetchlist.dropna(how='all')
+		prefetchlist['Source'] = "Prefetch"
+		autocustomlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="E:J",header=1)
+		recentlnklist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="K:O",header=1)
+		recentlnklist = recentlnklist.dropna(how='all')
+		recentlnklist['Source'] = "Recent LNK"
+		recentdocreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="P:S",header=1)
+		recentdocreg = recentdocreg.dropna(how='all')
+		recentdocreg['Source'] = "Recent Docs"
+		officerecentreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="T:X",header=1)
+		officerecentreg = officerecentreg.dropna(how='all')
+		officerecentreg['Source'] = "Office Recent Docs"
+		lastvisitreg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="Y:AB",header=1)
+		lastvisitreg = lastvisitreg.dropna(how='all')
+		lastvisitreg['Source'] = "Last Visited MRU"
+		opensavereg = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="AC:AF",header=1)
+		opensavereg = opensavereg.dropna(how='all')
+		opensavereg['Source'] = "Open Save MRU"
+
+		fileOpeningList = [fileOpeningMerged,prefetchlist,autocustomlist,recentlnklist,recentdocreg,officerecentreg,lastvisitreg,opensavereg]
+		fileOpeningExcel = pd.DataFrame()
+		fileOpeningExcel = pd.concat(fileOpeningList, ignore_index=True)
+		fileOpeningExcel.to_excel(writer,sheet_name="MERGED_File or Folder Opening",index=False,header=False,columns=fileOpeningColumn,startrow=1)
+		writer.save()
+	except Exception as e:
+		logger.error(e)
+
 
 def clean(df, columns):
 	for col in df.select_dtypes([np.object]).columns[1:]:
 		df[col] = df[col].str.replace('[\000-\010]|[\013-\014]|[\016-\037]', '')
 	return df
 
+def replace_first_null(df, col_name):
+	"""
+	Replace the first null value in DataFrame df.`col_name`
+	with `value`.
+	"""
+	idx = list(df.index)
+	last_valid = df[col_name].last_valid_index()
+	last_valid_row_number = idx.index(last_valid)
+	return last_valid_row_number + 1
+
 def main():
 	parser = argparse.ArgumentParser(description="Process triage, network or memory dump evidence file(s), sorted by projects for correlation")
 	parser.add_argument('-d', dest='directory', required=True, type=str, help="Directory containing evidence files")
+	parser.add_argument('-r', dest='results', required=True, type=str, help="Directory containing results that was output by Post Triage Python Script")
+	parser.add_argument('-p', dest='projectname', type=str, required=True, help="Codename of the project that the evidence is part of")
 	args = parser.parse_args()
 
-	outputSummary(args.directory)
-	
+	searchDirectory = args.directory
+	projectname = args.projectname
+	imagelist=[]
+
+	if "Incident" in searchDirectory:
+		pathParts = searchDirectory.split('\\')
+		for part in pathParts:
+			if "Incident" in part:
+				imagelist.append(part)
+				outputSummary(searchDirectory,projectname,args.results)
+
+	else:
+		for root, dirs, files in os.walk(searchDirectory):
+		#searchDirectory cannot end with a slash!
+			for directory in dirs:
+				if "Incident" in directory:
+						if directory not in imagelist:
+							imagelist.append(directory)
+							outputSummary(str(os.path.join(root,directory)),projectname,args.results)
+
 if __name__ == '__main__':
 	main()
-

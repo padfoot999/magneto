@@ -31,7 +31,7 @@ def compareMemTriage(databaseConnectionHandle, project):
         
     #Check if results folder exist, if not, create it.
     dir = os.getcwd()
-    resultsDir = dir + "/results"
+    resultsDir = dir + "/Results"
     if not os.path.exists(resultsDir):
         try:
             os.makedirs(resultsDir)
@@ -39,8 +39,15 @@ def compareMemTriage(databaseConnectionHandle, project):
             logging.error("Unable to create results folder")
             sys.exit()
 
-    with open('./results/' + date + '-compareMemTriage-' + project + '.txt', 'wb') as file:
-        
+    projResultsDir = dir + "/Results/" + project 
+    if not os.path.exists(projResultsDir):
+        try:
+            os.makedirs(projResultsDir)
+        except:
+            logging.error("Unable to create Project results folder")
+            sys.exit()
+
+    with open('./results/' + project + '/' + date + '-compareMemTriage' + '.txt', 'wb') as file: 
         #list all images for the specified project
         cur = databaseConnectionHandle.cursor()
         query = "SELECT DISTINCT imagename FROM project.project_image_mapping WHERE projectname = %s"
@@ -125,7 +132,7 @@ def baseline(databaseConnectionHandle, project):
 
     #Check if results folder exist, if not, create it.
     dir = os.getcwd()
-    resultsDir = dir + "/results"
+    resultsDir = dir + "/Results"
     if not os.path.exists(resultsDir):
         try:
             os.makedirs(resultsDir)
@@ -133,9 +140,17 @@ def baseline(databaseConnectionHandle, project):
             logging.error("Unable to create results folder")
             sys.exit()
 
+    projResultsDir = dir + "/Results/" + project 
+    if not os.path.exists(projResultsDir):
+        try:
+            os.makedirs(projResultsDir)
+        except:
+            logging.error("Unable to create Project results folder")
+            sys.exit()
+
     #Create excel workbook 
     workbook = Workbook()
-    destFilename = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S')) + '.xlsx'
+    destFilename = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S')) + '-Baseline.xlsx'
 # #=================================================================================
 # #MEMORY PATH  
     Schema = "environment_variables"
@@ -286,7 +301,7 @@ def baseline(databaseConnectionHandle, project):
         pass
 
     #Save Excel Workbook
-    workbook.save(filename='./results/' + destFilename)
+    workbook.save(filename='./Results/' + project + '/' + destFilename)
 
 #NAME: main
 #INPUT: NONE

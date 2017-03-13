@@ -42,7 +42,7 @@ def compareMemTriage(databaseConnectionHandle, project):
         
     #Check if results folder exist, if not, create it.
     dir = os.getcwd()
-    resultsDir = dir + "/results"
+    resultsDir = dir + "/Results"
     if not os.path.exists(resultsDir):
         try:
             os.makedirs(resultsDir)
@@ -50,7 +50,15 @@ def compareMemTriage(databaseConnectionHandle, project):
             logging.error("Unable to create results folder")
             sys.exit()
 
-    with open('./results/' + date + '-compareMemTriage-' + project + '.txt', 'wb') as file:
+    projResultsDir = dir + "/Results/" + project 
+    if not os.path.exists(projResultsDir):
+        try:
+            os.makedirs(projResultsDir)
+        except:
+            logging.error("Unable to create Project results folder")
+            sys.exit()
+
+    with open('./Results/' + project + '/' + date + '-compareMemTriage-' + project + '.txt', 'wb') as file:
         
         #list all images for the specified project
         cur = databaseConnectionHandle.cursor()
@@ -144,11 +152,19 @@ def baseline(databaseConnectionHandle, project):
             logging.error("Unable to create results folder")
             sys.exit()
 
+    projResultsDir = dir + "/Results/" + project 
+    if not os.path.exists(projResultsDir):
+        try:
+            os.makedirs(projResultsDir)
+        except:
+            logging.error("Unable to create Project results folder")
+            sys.exit()
+
     #Create excel workbook
     destFilename = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
     check_output("xlwings quickstart " + destFilename, shell=True)
-    move('./' + destFilename, './results')
-    workbook = load_workbook('./results/' + destFilename + '/'+ destFilename+ '.xlsm', keep_vba=True)
+    move('./' + destFilename, './Results/' + project)
+    workbook = load_workbook('./Results/' + project + '/' + destFilename + '/'+ destFilename+ '.xlsm', keep_vba=True)
 # #=================================================================================
 # #MEMORY PATH  
     Schema = "environment_variables"
@@ -316,7 +332,7 @@ def baseline(databaseConnectionHandle, project):
         pass
 
     #Save Excel Workbook
-    workbook.save('./results/' + destFilename + '/'+ destFilename+ '.xlsm')
+    workbook.save('./Results/' + project + '/' + destFilename + '/'+ destFilename+ '.xlsm')
 #=================================================================================
 #CREATE EXCEL SPREADSHEET CONTAINING MERGED SYS INFO AND NIC IP INFO
     try:
@@ -345,11 +361,11 @@ def baseline(databaseConnectionHandle, project):
     worksheet.title = 'sysinfo_nicip'
     for row in rows:
         worksheet.append(row)
-    workbook.save(filename='./results/' + mergedFilename)
+    workbook.save(filename='./Results/' + project + '/' + mergedFilename)
 
     _file = os.path.abspath(sys.argv[0])
     path = os.path.dirname(_file)
-    scripts_dir = path + '/results/' + destFilename
+    scripts_dir = path + '/Results/' + project + '/' + destFilename
 
     #VBScript to call upon python script in the folder (PROCESS_pythonVba) 
     strcode = \
@@ -396,11 +412,13 @@ def baseline(databaseConnectionHandle, project):
     com_instance.Quit()
 
     #Copies PROCESS_pythonVba from main directory into Excel directory created by xlwings when generating XLSM file
-    copy('./PROCESS_pythonVba.py', './results/'+destFilename)
-    with open('./results/'+destFilename+'/PROCESS_pythonVba.py') as f:
+    copy('./PROCESS_pythonVba.py','./Results/' + project + '/' +destFilename)
+    with open('./Results/' + project + '/' + destFilename+'/PROCESS_pythonVba.py') as f:
         lines = f.readlines()
-    with open('./results/'+destFilename+'/PROCESS_pythonVba.py', "w") as f:
-        lineToInsert = 'directory="' + os.getcwd() +'"'
+    with open('./Results/' + project + '/'+destFilename+'/PROCESS_pythonVba.py', "w") as f:
+        lineToInsert = 'projectDirectory="' + os.getcwd() + '/Results/' + project + '"'
+        lines.insert(0, lineToInsert)
+        lineToInsert = 'directory="' + os.getcwd() + '"'
         lines.insert(0, lineToInsert)
         f.write("\n".join(lines))
 
