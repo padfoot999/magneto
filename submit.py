@@ -52,7 +52,6 @@ def dbprocess(databaseConnectionHandle, directory):
 					if str(os.path.join(root,filename)) not in unprocessedlist:             
 						unprocessedlist.append(os.path.join(root,filename))
 	else:
-		logger.info("Success")
 		unprocessedlist.append(directory)
 
 	for rawFile in unprocessedlist:
