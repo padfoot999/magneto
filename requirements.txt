@@ -1,0 +1,9 @@
+xlrd==1.0.0
+win-inet-pton==1.0.1
+SQLAlchemy==1.1.5
+psycopg2==2.6.2
+pandas==0.19.1
+openpyxl==2.4.1
+numpy==1.11.3
+beautifulsoup4==4.5.3
+fuzzywuzzy==0.14.0
