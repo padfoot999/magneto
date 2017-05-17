@@ -28,7 +28,7 @@ WIP:
         <br />User name: postgres
         <br />Password: password
 6. After creating server, create database "magneto"
-7. Install all necessary python modules (i.e. Pandas, psycopg2) using pip
+7. Install all necessary python modules (i.e. Pandas, psycopg2) using pip (C:\Python27\Scripts). Refer to requirements.txt for full list of dependencies.
 8. Make sure that workstation has Powershell v4.0 and above installed
 9. Install strawberry perl 
 http://strawberryperl.com/
