@@ -7,3 +7,4 @@ openpyxl==2.4.1
 numpy==1.11.3
 beautifulsoup4==4.5.3
 fuzzywuzzy==0.14.0
+bs4==0.0.1
