@@ -9,13 +9,6 @@ Features:
 3 ) Parse and process volatility output files, saving them in pgsql 
 4 ) Perform baseline, long tail analysis and correlation using above data, stored in pgsql
 
-WIP:
-1 ) Identify CVE vulnerabilities based on software applications installed 
-2 ) Upload file hashes to VT and automatically process unknown files through cuckoo 
-3 ) Spoofed email identifier 
-4 ) Windows Log Parser 
-5 ) Windows malicious document identifier
-
 ### Step by Step Guide to power up MAGNETO on Windows
 
 1. Download Magneto Files from "https://github.com/padfoot999/magneto"
