@@ -38,13 +38,15 @@ install Parse::Win32Registry
 
 ### Triage Post-Processing
 
-MEMORY PROCESSING
+#### MEMORY PROCESSING
 Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Dump Volatility output into the Evidence folder within each Incident folder.
 
-WINDOWS EVENT LOG
+#### WINDOWS EVENT LOG
 Process Event Logs using Windows Powershell (WINTEL.ps1) file.
+cd <Magneto WINTEL folder>
+.\WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project <Project Name>
 
-WINDOWS ARTIFACT PROCESSING
+#### WINDOWS ARTIFACT PROCESSING
 Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
 
 1. Run submit.py file
@@ -95,9 +97,4 @@ python OUTPUT_cveChecker.py -p <Project Name> -t <Image Name>
 ```
 python OUTPUT_summary.py -d <Path to Incident folder> -r <Output folder after running PROCESS_postTriage.py> -p <Project Name>
 python OUTPUT_summary.py -d "E:\\" -r "F:\\magneto\\results\\PROJECT" -p PROJECT
-```
-### WINTEL Powershell 
-```
-cd <Magneto WINTEL folder>
-.\WINTEL_WindowsLogParser-v?.ps1 -logPath <...\Evidence\Logs)> -project <Project Name>
 ```
