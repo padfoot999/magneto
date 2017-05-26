@@ -36,14 +36,20 @@ http://strawberryperl.com/
 cpan
 install Parse::Win32Registry
 
-### SOP for Triage Post-Processing
+### Triage Post-Processing
 
-1. Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Dump Volatility output into the Evidence folder within each Incident folder.
-2. Process Event Logs using Windows Powershell (WINTEL.ps1) file.
-3. Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
-4. Run submit.py file
-5. Run Baseline, ProcessDiff, ProcessNetworkConnections, AutoRunMerged, CVE Checker Python scripts
-6. Run Summary file
+MEMORY PROCESSING
+Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Dump Volatility output into the Evidence folder within each Incident folder.
+
+WINDOWS EVENT LOG
+Process Event Logs using Windows Powershell (WINTEL.ps1) file.
+
+WINDOWS ARTIFACT PROCESSING
+Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
+
+1. Run submit.py file
+2. Run Baseline, ProcessDiff, ProcessNetworkConnections, AutoRunMerged, CVE Checker Python scripts
+3. Run Summary file
 
 ## Dependencies for Windows
 
@@ -53,45 +59,45 @@ install Parse::Win32Registry
 ### Python Magneto
 * Post Triage
 ```
-python PROCESS_postTriage.py -d <Path to Incident folder> -p <Project Name (i.e. RADIUM)>
+python PROCESS_postTriage.py -d <Path to Incident folder> -p <Project Name>
 ```
 * Submitting Incident Folders into Postgresql database
 ```
-python submit.py -d <Path to Incident folder> -p <Project Name (i.e. RADIUM)>
+python submit.py -d <Path to Incident folder> -p <Project Name>
 ```
 * Output Baseline
 ```
-python OUTPUT_baselineCSV.py -p <Project Name (i.e. RADIUM)>
-python OUTPUT_baselineXLSX.py -p <Project Name (i.e. RADIUM)>
+python OUTPUT_baselineCSV.py -p <Project Name>
+python OUTPUT_baselineXLSX.py -p <Project Name>
 ```
 * Output Process Difference
 ```
-python OUTPUT_processDifference.py -p <Project Name (i.e. RADIUM)>  
+python OUTPUT_processDifference.py -p <Project Name>  
 ```
 * Output Process Network Connections
 ```
-python OUTPUT_processNetworkConn.py -p <Project Name (i.e. RADIUM)>  
+python OUTPUT_processNetworkConn.py -p <Project Name>  
 ```
 * Output Process Network Connections
 ```
-python OUTPUT_processNetworkConn.py -p <Project Name (i.e. RADIUM)>  
+python OUTPUT_processNetworkConn.py -p <Project Name>  
 ```
 * Output Merged AutoRun Paths
 ```
-python OUTPUT_autorunMerge.py -d <Path to Incident folder> -p <Project Name (i.e. RADIUM)>  
+python OUTPUT_autorunMerge.py -d <Path to Incident folder> -p <Project Name>  
 ```
 * Output cveChecker
 ```
-python OUTPUT_cveChecker.py -p <Project Name (i.e. RADIUM)> 
-python OUTPUT_cveChecker.py -p <Project Name (i.e. RADIUM)> -t <Image Name (i.e. 20170117115236 - AERO Incident)
+python OUTPUT_cveChecker.py -p <Project Name>
+python OUTPUT_cveChecker.py -p <Project Name> -t <Image Name>
 ```
 * Output Summary File
 ```
-python OUTPUT_summary.py -d <Path to Incident folder> -r <Output folder after running PROCESS_postTriage.py> -p <Project Name (i.e. RADIUM)>
-python OUTPUT_summary.py -d "E:\\" -r "F:\\magneto v2\\results\\ARGON" -p ARGON
+python OUTPUT_summary.py -d <Path to Incident folder> -r <Output folder after running PROCESS_postTriage.py> -p <Project Name>
+python OUTPUT_summary.py -d "E:\\" -r "F:\\magneto\\results\\PROJECT" -p PROJECT
 ```
 ### WINTEL Powershell 
 ```
 cd <Magneto WINTEL folder>
-.\WINTEL_WindowsLogParser-v?.ps1 -logPath <...\Evidence\Logs)> -project <ARGON>
+.\WINTEL_WindowsLogParser-v?.ps1 -logPath <...\Evidence\Logs)> -project <Project Name>
 ```
