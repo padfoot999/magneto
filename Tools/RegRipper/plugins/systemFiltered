@@ -1,0 +1,16 @@
+# 20120528 *ALL* Plugins that apply on SYSTEM hive, alphabetical order
+compname
+currentcontrolset
+disablelastaccess
+nic
+nic2
+shutdown
+shutdowncount
+svc
+timezone
+usb
+usbdevices
+usbmounted
+usbstor
+usbstor2
+usbstor3
