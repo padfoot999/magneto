@@ -1,11 +1,8 @@
 #$hive points to System hive, $hive2 points to HKU hive;
-package usbParser;
+package usbParserTroubleshoot;
 use strict;
 use Data::Dumper;
 use Excel::Writer::XLSX;
-use DateTime;
-use Time::Piece;
-use Regexp::Common qw(time);
 
 #perl2exe_include Data/Dumper;
 
@@ -28,52 +25,14 @@ sub getVersion {return $config{version};}
 
 my $VERSION = getVersion();
 
-sub printDetails {
-	my $worksheet = shift;
-	my $row = shift;
-	my $datetime = shift;
-	my $event_type = shift;
-	my $reg_key = shift;
-	my $usb = shift;
-	my $datetime_parsed;
-	$datetime =~ s/ UTC//g;
-	::rptMsg($datetime);
-	if ($datetime !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
-		my @date = $datetime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
-		$datetime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
-	} else {
-		my @parse = $datetime =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
-		$datetime = $parse[0].$parse[1];
-		$datetime_parsed = Time::Piece->strptime($datetime, '%a %b  %d %H:%M:%S %Y');
-	}
-	::rptMsg($datetime);
-	::rptMsg($datetime_parsed);
-	$worksheet->write($row, 0, $datetime_parsed->strftime("%Y-%m-%d"));
-	::rptMsg($datetime_parsed->strftime("%Y-%m-%d"));
-	$worksheet->write($row, 1, $datetime_parsed->strftime("%H:%M:%S"));
-	::rptMsg($datetime_parsed->strftime("%H:%M:%S"));
-	$worksheet->write($row, 2, "REG");
-	$worksheet->write($row, 3, $event_type);
-	$worksheet->write($row, 4, $reg_key);
-	my $description;
-	$description .= "DEVICE:".$usb->{'DeviceClassID'} if $usb->{'DeviceClassID'} ne "";
-	$description .= " SERIAL NUMBER:".$usb->{'SerialNumber'} if $usb->{'SerialNumber'} ne "";
-	$description .= " FRIENDLY NAME:".$usb->{'FriendlyName'} if $usb->{'FriendlyName'} ne "";
-	$description .= " VOLUME GUID:".$usb->{'VolumeGUID'} if $usb->{'VolumeGUID'} ne "";
-	$description .= " DRIVE LETTER:".$usb->{'DriveLetter'} if $usb->{'DriveLetter'} ne "";
-	$worksheet->write($row, 5, $description);
-	$row++;
-	return $row;
-}
-
 sub pluginmain {
 	#Serial Number => Volume GUID
 	my $class = shift;
 	my $user = shift;
 	my $software = $user;
   	my $output = $user;
-  	$output =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1/g;
-	$software =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
+  	$output =~ s/(.*\\)([^_\\]*)_([^\\]*).dat$/$1/g;
+	$software =~ s/(.*\\)([^_\\]*)_([^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
 	#$software =~ s/(HKU)[^\\]*$/SOFTWARE/g;
 	my $system = $software;
 	$system =~ s/(.*)SOFTWARE([^\\]*$)/$1SYSTEM$2/g;
@@ -135,14 +94,13 @@ sub pluginmain {
 
 	#Volume GUID => User Name
 	my %ownerDictionary;
-	my %lastSeenDictionary;
 	my @userNumbers = keys %userMapping;
 	foreach my $userNumber (@userNumbers) {
 		#S20-15-21....
 		my $userId = $userMapping{$userNumber};
 		my $currentNumber = $userNumber;
 		chomp $currentNumber;
-		$user =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1$2_$currentNumber.dat/g;
+		$user =~ s/(.*\\)([^_\\]*)_([^\\]*).dat/$1$2_$currentNumber.dat/g;
 		$reg = Parse::Win32Registry->new($user);
 		$root_key = $reg->get_root_key;
 		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2";
@@ -152,12 +110,8 @@ sub pluginmain {
 				foreach my $s (@subkeys) {
 					if (exists $ownerDictionary{$s->get_name()}) {
 						$ownerDictionary{$s->get_name()} .= ", ".$userDictionary{$userId}." on ".gmtime($s->get_timestamp())." UTC";
-						if ($s->get_timestamp() > $lastSeenDictionary{$s->get_name()}) {
-							$lastSeenDictionary{$s->get_name()} = $s->get_timestamp();
-						}
 					} else {
 						$ownerDictionary{$s->get_name()} = $userDictionary{$userId}." on ".gmtime($s->get_timestamp())." UTC";
-						$lastSeenDictionary{$s->get_name()} = $s->get_timestamp();
 					}
 				}
 			}
@@ -203,15 +157,20 @@ sub pluginmain {
 		return;
 	}
 
-  	my %diskDevice;
-  	$key_path = $ccs."\\Control\\DeviceClasses\\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}";
+  my %usb;
+  $key_path = $ccs."\\Enum\\USB";
 	if (my $key = $root_key->get_subkey($key_path)) {
 		my @subkeys = $key->get_list_of_subkeys();
 		if (scalar @subkeys > 0) {
 			foreach my $s (@subkeys) {
-		        my $serialNo = $s->get_name();
-		        $diskDevice{$serialNo} = gmtime($s->get_timestamp())." UTC";
-		     }
+        my @sk = $s->get_list_of_subkeys();
+				if (scalar(@sk) > 0) {
+					foreach my $k (@sk) {
+            my $serialNo = $k->get_name();
+            $usb{$serialNo} = gmtime($k->get_timestamp())." UTC";
+          }
+        }
+      }
 		}
 		else {
 			::rptMsg($key_path." has no subkeys.");
@@ -221,6 +180,41 @@ sub pluginmain {
 		::rptMsg($key_path." not found.");
 	}
 
+  my %diskDevice;
+  $key_path = $ccs."\\Control\\DeviceClasses\\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}";
+	if (my $key = $root_key->get_subkey($key_path)) {
+		my @subkeys = $key->get_list_of_subkeys();
+		if (scalar @subkeys > 0) {
+			foreach my $s (@subkeys) {
+        my $serialNo = $s->get_name();
+        $diskDevice{$serialNo} = gmtime($s->get_timestamp())." UTC";
+      }
+		}
+		else {
+			::rptMsg($key_path." has no subkeys.");
+		}
+	}
+	else {
+		::rptMsg($key_path." not found.");
+	}
+
+  my %volumeDevice;
+  $key_path = $ccs."\\Control\\DeviceClasses\\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}";
+  if (my $key = $root_key->get_subkey($key_path)) {
+    my @subkeys = $key->get_list_of_subkeys();
+    if (scalar @subkeys > 0) {
+      foreach my $s (@subkeys) {
+        my $serialNo = $s->get_name();
+        $volumeDevice{$serialNo} = gmtime($s->get_timestamp())." UTC";
+      }
+    }
+    else {
+      ::rptMsg($key_path." has no subkeys.");
+    }
+  }
+  else {
+    ::rptMsg($key_path." not found.");
+  }
   	::rptMsg($ccs);
 	$key_path = $ccs."\\Enum\\USBStor";
 	if (my $key = $root_key->get_subkey($key_path)) {
@@ -238,32 +232,30 @@ sub pluginmain {
 							$friendly = $k->get_value("FriendlyName")->get_data();
 						};
 						$usbValues->{'FriendlyName'} = $friendly;
+						$usbValues->{'Ven/Prod/RevKeyUpdate'} = gmtime($k->get_timestamp())." UTC";
 						my $volguid = $mountedDevices{$k->get_name()};
 						$usbValues->{'VolumeGUID'} = $volguid;
-						my $serialnum = $k->get_name();
-
-						for (grep /\b\Q$serialnum\E\b/i, keys %diskDevice)
-						{
-						    $usbValues->{'RebootConnected'} = $diskDevice{$_};
-						}
 
 						if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0064")) {
 							$usbValues->{'FirstInstallDate'} = gmtime($k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0064")->get_timestamp())." UTC";
-							if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066")) {
-								$usbValues->{'LastConnectedDate'} = gmtime($k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066")->get_timestamp())." UTC";
-								if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0067")) {
-									$usbValues->{'LastRemovedDate'} = gmtime($k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0067")->get_timestamp())." UTC";
-								}}}
+							if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0065")) {
+								$usbValues->{'InstallDate'} = gmtime($k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0065")->get_timestamp())." UTC";
+								if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066")) {
+									$usbValues->{'LastConnectedDate'} = gmtime($k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066")->get_timestamp())." UTC";
+									if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0067")) {
+										$usbValues->{'LastRemovedDate'} = gmtime($k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0067")->get_timestamp())." UTC";
+								}}}}
 						else {
 							if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\00000064\\00000000")) {
 								my $t = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\00000064\\00000000")->get_value("Data")->get_data();
 								my ($t0,$t1) = unpack("VV",$t);
 								$usbValues->{'FirstInstallDate'} = gmtime(::getTime($t0,$t1))." UTC";
-								if (exists $lastSeenDictionary{$volguid}) {
-									$usbValues->{'LastConnectedDate'} = gmtime($lastSeenDictionary{$volguid})." UTC";
-								} else {
-									$usbValues->{'LastConnectedDate'} = "";
+								if (my $key = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\00000065\\00000000")) {
+									$t = $k->get_subkey("Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\00000065\\00000000")->get_value("Data")->get_data();
+									($t0,$t1) = unpack("VV",$t);
+									$usbValues->{'InstallDate'} = gmtime(::getTime($t0,$t1))." UTC";
 								}
+								$usbValues->{'LastConnectedDate'} = "";
 								$usbValues->{'LastRemovedDate'} = "";
 							}
 							else {
@@ -272,9 +264,23 @@ sub pluginmain {
 								$usbValues->{'LastRemovedDate'} = "";
 							}
 						}
+						my $serialnum = $k->get_name();
 						for (grep /\b\Q$serialnum\E\b/i, keys %driveDictionary)
 						{
 						    $usbValues->{'DriveLetter'} = $driveDictionary{$_};
+						}
+            			for (grep /\b\Q$serialnum\E\b/i, keys %diskDevice)
+						{
+						    $usbValues->{'diskDeviceUpdate'} = $diskDevice{$_};
+						}
+            			for (grep /\b\Q$serialnum\E\b/i, keys %volumeDevice)
+						{
+						    $usbValues->{'volumeDeviceUpdate'} = $volumeDevice{$_};
+						}
+            			$serialnum =~ s/(.*)&(.*)/$1/;
+            			for (grep /\b\Q$serialnum\E\b/i, keys %usb)
+						{
+						    $usbValues->{'Vid/PidKeyUpdate'} = $usb{$_};
 						}
 						$usbValues->{'AssociatedUser'} = $ownerDictionary{$volguid};
 						push @usbDictionary, $usbValues;
@@ -292,92 +298,39 @@ sub pluginmain {
 	else {
 		::rptMsg($key_path." not found.");
 	}
-
-	my $workbook = Excel::Writer::XLSX->new($output.'USBParser.xlsx');
+	my $workbook = Excel::Writer::XLSX->new($output.'USBParserTroubleshoot.xlsx');
 	my $worksheet = $workbook->add_worksheet();
 	$worksheet->write(0,0,"Device Class ID");
 	$worksheet->write(0,1,"Serial Number");
 	$worksheet->write(0,2,"Friendly Name");
 	$worksheet->write(0,3,"Volume GUID");
-	$worksheet->write(0,4,"First Connected Since Reboot");
-	$worksheet->write(0,5,"First Install Date");
-	$worksheet->write(0,6,"Last Connected Date");
-	$worksheet->write(0,7,"Last Removed Date");
-	$worksheet->write(0,8,"Drive Letter & Volume Name");
-	$worksheet->write(0,9,"Associated User");
+  	$worksheet->write(0,4,"Vid/Pid Key Update");
+	$worksheet->write(0,5,"Ven/Prod/Rev Key Update");
+ 	$worksheet->write(0,6,"Disk Device Update");
+  	$worksheet->write(0,7,"Volume Device Update");
+	$worksheet->write(0,8,"First Install Date");
+	$worksheet->write(0,9,"Install Date");
+	$worksheet->write(0,10,"Last Connected Date");
+	$worksheet->write(0,11,"Last Removed Date");
+	$worksheet->write(0,12,"Drive Letter & Volume Name");
+	$worksheet->write(0,13,"Associated User");
 	my $row = 1;
 	for my $usb (@usbDictionary) {
 		$worksheet->write($row,0,$usb->{'DeviceClassID'});
 		$worksheet->write($row,1,$usb->{'SerialNumber'});
 		$worksheet->write($row,2,$usb->{'FriendlyName'});
 		$worksheet->write($row,3,$usb->{'VolumeGUID'});
-		$worksheet->write($row,4,$usb->{'RebootConnected'});
-		$worksheet->write($row,5,$usb->{'FirstInstallDate'});
-		$worksheet->write($row,6,$usb->{'LastConnectedDate'});
-		$worksheet->write($row,7,$usb->{'LastRemovedDate'});
-		$worksheet->write($row,8,$usb->{'DriveLetter'});
-		$worksheet->write($row,9,$usb->{'AssociatedUser'});
+    	$worksheet->write($row,4,$usb->{'Vid/PidKeyUpdate'});
+		$worksheet->write($row,5,$usb->{'Ven/Prod/RevKeyUpdate'});
+    	$worksheet->write($row,6,$usb->{'diskDeviceUpdate'});
+    	$worksheet->write($row,7,$usb->{'volumeDeviceUpdate'});
+		$worksheet->write($row,8,$usb->{'FirstInstallDate'});
+		$worksheet->write($row,9,$usb->{'InstallDate'});
+		$worksheet->write($row,10,$usb->{'LastConnectedDate'});
+		$worksheet->write($row,11,$usb->{'LastRemovedDate'});
+		$worksheet->write($row,12,$usb->{'DriveLetter'});
+		$worksheet->write($row,13,$usb->{'AssociatedUser'});
 		$row++;
-	}
-
-	my $workbook2 = Excel::Writer::XLSX->new($output.'Timeline-USB.xlsx');
-	my $worksheet2 = $workbook2->add_worksheet();
-	my $row2 = 0;
-	for my $usb (@usbDictionary) {
-		if ($usb->{'RebootConnected'} ne "") {
-			my $event_type = "USB First Connected Since Reboot";
-			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Control\\DeviceClasses\\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'RebootConnected'}, $event_type, $reg_key, $usb);
-		}
-		if ($usb->{'FirstInstallDate'} ne "") {
-			my $event_type = "USB First Install Date";
-			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Enum\\USBStor\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0064";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'FirstInstallDate'}, $event_type, $reg_key, $usb);
-		}
-		if ($usb->{'LastConnectedDate'} ne "") {
-			my $event_type = "USB Last Connected Date";
-			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Enum\\USBStor\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0065";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'LastConnectedDate'}, $event_type, $reg_key, $usb);
-		}
-		if ($usb->{'LastRemovedDate'} ne "") {
-			my $event_type = "USB Last Removed Date";
-			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Enum\\USBStor\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'LastRemovedDate'}, $event_type, $reg_key, $usb);
-		}
-		if ($usb->{'AssociatedUser'} ne "") {
-			my @users = split(/,/, $usb->{'AssociatedUser'});
-			for my $user (@users) {
-				my $event_type = "USB Associated User";
-				my @owner = $user =~ m/(.*) on/;
-				my $reg_key = "HKEY_USERS\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2";
-				my @date = $user =~ m/ on (.*)/;
-				my $datetime = $date[0];
-				$datetime =~ s/ UTC//g;
-				my $datetime_parsed;
-				if ($datetime !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
-					my @date = $datetime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
-					$datetime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
-				} else {
-					my @parse = $datetime =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
-					$datetime = $parse[0].$parse[1];
-					$datetime_parsed = Time::Piece->strptime($datetime, '%a %b  %d %H:%M:%S %Y');
-				}
-				$worksheet2->write($row2, 0, $datetime_parsed->strftime("%Y-%m-%d"));
-				$worksheet2->write($row2, 1, $datetime_parsed->strftime("%H:%M:%S"));
-				$worksheet2->write($row2, 2, "REG");
-				$worksheet2->write($row2, 3, $event_type);
-				$worksheet2->write($row2, 4, $reg_key);
-				my $description;
-				$description .= "USER:".$owner[0];
-				$description .= " DEVICE:".$usb->{'DeviceClassID'} if $usb->{'DeviceClassID'} ne "";
-				$description .= " SERIAL NUMBER:".$usb->{'SerialNumber'} if $usb->{'SerialNumber'} ne "";
-				$description .= " FRIENDLY NAME:".$usb->{'FriendlyName'} if $usb->{'FriendlyName'} ne "";
-				$description .= " VOLUME GUID:".$usb->{'VolumeGUID'} if $usb->{'VolumeGUID'} ne "";
-				$description .= " DRIVE LETTER:".$usb->{'DriveLetter'} if $usb->{'DriveLetter'} ne "";
-				$worksheet2->write($row2, 5, $description);
-				$row2++;
-			}
-		}
 	}
 }
 1;
