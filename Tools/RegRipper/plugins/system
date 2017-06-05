@@ -5,6 +5,7 @@ auditfail
 backuprestore
 compname
 crashcontrol
+currentcontrolset
 ddm
 devclass
 disablelastaccess
@@ -20,8 +21,8 @@ legacy
 mountdev
 network
 nic
-nic_mst2
 nic2
+nic_mst2
 nolmhash
 pagefile
 prefetch
@@ -43,8 +44,9 @@ termserv
 timezone
 usb
 usbdevices
+usbmounted
 usbstor
 usbstor2
 usbstor3
-xpedition
 wpdbusenum
+xpedition

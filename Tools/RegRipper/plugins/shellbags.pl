@@ -38,6 +38,9 @@
 package shellbags;
 use strict;
 use Time::Local;
+use Excel::Writer::XLSX;
+use Time::Piece;
+use Regexp::Common qw(time);
 
 my %config = (hive          => "USRCLASS\.DAT",
 							hivemask      => 32,
@@ -174,6 +177,10 @@ my %folder_types = ("{724ef170-a42d-4fef-9f26-b60e846fba4f}" => "Administrative 
     "{b5947d7f-b489-4fde-9e77-23780cc610d1}" => "Virtual Machines",
     "{f38bf404-1d43-42f2-9305-67de0b28fc23}" => "Windows");
 
+my $worksheet;
+my $row = 0;
+my $reg_key;
+
 sub pluginmain {
 	my $class = shift;
 	my $hive = shift;
@@ -188,6 +195,10 @@ sub pluginmain {
     ::rptMsg('//It take at least two registry keys to pinpoint what the user changed that caused the key to be updated'."\n");
 
 	my %item = ();
+    my $workbook_name = $hive;
+    $workbook_name =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1Timeline-ShellBags-$3.xlsx/g;
+    my $workbook = Excel::Writer::XLSX->new($workbook_name);
+    $worksheet = $workbook->add_worksheet();
 
 	my $reg = Parse::Win32Registry->new($hive);
 	my $root_key = $reg->get_root_key;
@@ -198,6 +209,7 @@ sub pluginmain {
     my $key;
     
     if ($key = $root_key->get_subkey($paths{"Win7"})) {
+        $reg_key = $paths{"Win7"};
         $item{path} = "Desktop\\";
         $item{name} = "";
 # Print header info
@@ -206,6 +218,7 @@ sub pluginmain {
         traverse($key,\%item);
     }
     elsif ($key = $root_key->get_subkey($paths{"XP"})) {
+        $reg_key = $paths{"XP"};
         $item{path} = "Desktop\\";
         $item{name} = "";
 # Print header info
@@ -214,6 +227,7 @@ sub pluginmain {
         traverse($key,\%item);
     }
     elsif ($key = $root_key->get_subkey($paths{"Win81"})) {
+        $reg_key = $paths{"Win81"};
         $item{path} = "Desktop\\";
         $item{name} = "";
 # Print header info
@@ -228,13 +242,13 @@ sub traverse {
 	my $parent = shift;
 	
 	my %item = ();
-  my @vals = $key->get_list_of_values();
+    my @vals = $key->get_list_of_values();
    
-  my %values;
-  foreach my $v (@vals) {
-  	my $name = $v->get_name();
-  	$values{$name} = $v->get_data();
-  }
+    my %values;
+    foreach my $v (@vals) {
+        my $name = $v->get_name();
+        $values{$name} = $v->get_data();
+    }
   
   delete $values{NodeSlot};
   my $mru;
@@ -347,7 +361,21 @@ sub traverse {
 # 		my $str = sprintf "%-20s |%-20s | %-20s | %-20s | %-20s |".$resource,$item{mrutime_str},$m,$a,$c,$o;
 		my $str = sprintf "%-20s |%-20s | %-20s | %-20s | %-20s | %-12s |".$resource." [".$item{path}."]",$item{mrutime_str},$m,$a,$c,$o,$mft;
  		::rptMsg($str);
- 		
+        if ($item{mrutime_str}) {
+            my $mrutime = $item{mrutime_str};
+            my @date = $mrutime =~ $RE{time}{strftime}{-pat => '%Y-%m-%d %H:%M:%S'}{-keep};
+            my $mrutime_parsed = Time::Piece->strptime($date[0], '%Y-%m-%d %H:%M:%S');
+            $worksheet->write($row, 0, $mrutime_parsed->strftime("%Y-%m-%d"));
+            $worksheet->write($row, 1, $mrutime_parsed->strftime("%H:%M:%S"));
+            $worksheet->write($row, 2, "REG");
+            $worksheet->write($row, 3, "Folder Accessed");
+            my $updated_reg_key = $reg_key."\\".$item{path};
+            $worksheet->write($row, 4, $updated_reg_key);
+            my $description = "PATH:".$resource;
+            $worksheet->write($row, 5, $description);
+            $row++;
+        }
+        
  		if ($item{name} eq "" || $item{name} =~ m/\\$/) {
  			
  		}
