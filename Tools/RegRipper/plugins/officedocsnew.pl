@@ -16,6 +16,9 @@
 #-----------------------------------------------------------
 package officedocsnew;
 use strict;
+use Excel::Writer::XLSX;
+use Time::Piece;
+use Regexp::Common qw(time);
 
 my %config = (hive          => "NTUSER\.DAT",
               hasShortDescr => 1,
@@ -61,8 +64,9 @@ sub pluginmain {
 	# ::rptMsg("officedocs v.".$VERSION); # 20110830 [fpi] - redundant
 	my $version;
 	my $tag = 0;
-	my @versions = ("14\.0", "15\.0");
-	my %paths = ("14\.0" => "Microsoft Office 2010",
+	my @versions = ("12\.0", "14\.0", "15\.0");
+	my %paths = ("12\.0" => "Microsoft Office 2007",
+					"14\.0" => "Microsoft Office 2010",
                  "15\.0" => "Microsoft Office 365/2013");
 	foreach my $ver (@versions) {
 		my $key_path = "Software\\Microsoft\\Office\\".$ver."\\Common\\Open Find";
@@ -73,6 +77,14 @@ sub pluginmain {
 	}
 	
 	if ($tag) {
+		my $workbook_name = $ntuser;
+		$workbook_name =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1Timeline-OfficeDocsNew-$3.xlsx/g;
+		my @user = $ntuser =~ m/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/;
+		my $currentuser = $user[1]."_".$user[2];
+		my $workbook = Excel::Writer::XLSX->new($workbook_name);
+		my $worksheet = $workbook->add_worksheet();
+		my $row = 0;
+
 		::rptMsg("MSOffice version ".$version." (".$paths{$version}.") located.");
 		my $key_path = "Software\\Microsoft\\Office\\".$version;	                 
 		my $of_key = $root_key->get_subkey($key_path);
@@ -97,6 +109,27 @@ sub pluginmain {
 					foreach my $u (sort {$a <=> $b} keys %files) {
 						my ($val,$data) = split(/:/,$files{$u},2);
 						::rptMsg("  ".$val." -> ".$data);
+						my $lastUsedDate = $data;
+						my @date;
+						my $lastUsedDate_parsed;
+						if ($lastUsedDate !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+				   		} else {
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			$lastUsedDate = $parse[0].$parse[1];
+				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
+				   		}
+						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
+						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
+						$worksheet->write($row, 2, "REG");
+						$worksheet->write($row, 3, "Content Modification Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$word;
+						$worksheet->write($row, 4, $reg_key);
+						my $description = "FILE:".$data;
+						$description =~ s/$lastUsedDate_parsed//g;
+						$worksheet->write($row, 5, $description);
+						$row++;
 					}
 				}
 				else {
@@ -127,6 +160,27 @@ sub pluginmain {
 					foreach my $u (sort {$a <=> $b} keys %files) {
 						my ($val,$data) = split(/:/,$files{$u},2);
 						::rptMsg("  ".$val." -> ".$data);
+						my $lastUsedDate = $data;
+						my @date;
+						my $lastUsedDate_parsed;
+						if ($lastUsedDate !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+				   		} else {
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			$lastUsedDate = $parse[0].$parse[1];
+				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
+				   		}
+						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
+						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
+						$worksheet->write($row, 2, "REG");
+						$worksheet->write($row, 3, "Content Modification Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$excel;
+						$worksheet->write($row, 4, $reg_key);
+						my $description = "FILE:".$data;
+						$description =~ s/$lastUsedDate_parsed//g;
+						$worksheet->write($row, 5, $description);
+						$row++;
 					}
 				}
 				else {
@@ -157,6 +211,27 @@ sub pluginmain {
 					foreach my $u (sort {$a <=> $b} keys %files) {
 						my ($val,$data) = split(/:/,$files{$u},2);
 						::rptMsg("  ".$val." -> ".$data);
+						my $lastUsedDate = $data;
+						my @date;
+						my $lastUsedDate_parsed;
+						if ($lastUsedDate !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+				   		} else {
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			$lastUsedDate = $parse[0].$parse[1];
+				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
+				   		}
+						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
+						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
+						$worksheet->write($row, 2, "REG");
+						$worksheet->write($row, 3, "Content Modification Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$access;
+						$worksheet->write($row, 4, $reg_key);
+						my $description = "FILE:".$data;
+						$description =~ s/$lastUsedDate_parsed//g;
+						$worksheet->write($row, 5, $description);
+						$row++;
 					}
 				}
 				else {
@@ -187,6 +262,27 @@ sub pluginmain {
 					foreach my $u (sort {$a <=> $b} keys %files) {
 						my ($val,$data) = split(/:/,$files{$u},2);
 						::rptMsg("  ".$val." -> ".$data);
+						my $lastUsedDate = $data;
+						my @date;
+						my $lastUsedDate_parsed;
+						if ($lastUsedDate !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+				   		} else {
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			$lastUsedDate = $parse[0].$parse[1];
+				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
+				   		}
+						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
+						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
+						$worksheet->write($row, 2, "REG");
+						$worksheet->write($row, 3, "Content Modification Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$ppt;
+						$worksheet->write($row, 4, $reg_key);
+						my $description = "FILE:".$data;
+						$description =~ s/$lastUsedDate_parsed//g;
+						$worksheet->write($row, 5, $description);
+						$row++;
 					}
 				}
 				else {

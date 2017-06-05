@@ -48,8 +48,7 @@ sub pluginmain {
                  "8\.0" => "Microsoft Office 97",
                  "9\.0" => "Microsoft Office 2000",
                  "10\.0" => "Microsoft Office XP",
-                 "11\.0" => "Microsoft Office 2003",
-                 "12\.0" => "Microsoft Office 2007");
+                 "11\.0" => "Microsoft Office 2003");
 	foreach my $ver (@versions) {
 		my $key_path = "Software\\Microsoft\\Office\\".$ver."\\Common\\Open Find";
 		if (defined($root_key->get_subkey($key_path))) {
