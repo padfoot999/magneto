@@ -1,6 +1,6 @@
 #-----------------------------------------------------------
 # comdlg32.pl
-# Plugin for Registry Ripper 
+# Plugin for Registry Ripper
 #
 # Change history
 #   20121005 - updated to address shell item type 0x3A
@@ -13,7 +13,7 @@
 # References
 #   Win2000 - http://support.microsoft.com/kb/319958
 #   XP - http://support.microsoft.com/kb/322948/EN-US/
-#		
+#
 # copyright 2012 Quantum Analytics Research, LLC
 # Author: H. Carvey, keydet89@yahoo.com
 #-----------------------------------------------------------
@@ -45,9 +45,9 @@ sub pluginmain {
 	my $class = shift;
 	my $user = shift;
 	my $software = $user;
-  	my $output = $user;
-  	$output =~ s/(.*\\)([^_\\]*)_([^\\]*).dat$/$1/g;
-	$software =~ s/(.*\\)([^_\\]*)_([^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
+	my $output = $user;
+	$output =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1/g;
+	$software =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
 	my $system = $software;
 	$system =~ s/(.*)SOFTWARE([^\\]*$)/$1SYSTEM$2/g;
 	my $reg = Parse::Win32Registry->new($user);
@@ -55,15 +55,32 @@ sub pluginmain {
 
 	my $workbook = Excel::Writer::XLSX->new($output.'FileOpeningParser.xlsx');
 	my $worksheet = $workbook->add_worksheet();
-	
-	$worksheet->write(0,0,"File Name");
-	$worksheet->write(0,1,"File Path");
-	$worksheet->write(0,2,"MRU List EX Order");
-	$worksheet->write(0,3,"Extension");
-	$worksheet->write(0,4,"Last Execution");
-	$worksheet->write(0,5,"Source");
-	$worksheet->write(0,6,"User");
-	$worksheet->write(0,7,"Action");
+	$worksheet->write(0,0,"1");
+	$worksheet->write(0,1,"2");
+	$worksheet->write(0,2,"3");
+	$worksheet->write(0,3,"4");
+	$worksheet->write(0,4,"5");
+	$worksheet->write(0,5,"6");
+	$worksheet->write(0,6,"7");
+	$worksheet->write(0,7,"8");
+	$worksheet->write(0,8,"9");
+	$worksheet->write(0,9,"10");
+	$worksheet->write(0,10,"11");
+	$worksheet->write(0,11,"12");
+	$worksheet->write(0,12,"13");
+	$worksheet->write(0,13,"14");
+	$worksheet->write(0,14,"15");
+	$worksheet->write(0,15,"16");
+	$worksheet->write(0,16,"17");
+
+	# $worksheet->write(0,0,"File Name");
+	# $worksheet->write(0,1,"File Path");
+	# $worksheet->write(0,2,"MRU List EX Order");
+	# $worksheet->write(0,3,"Extension");
+	# $worksheet->write(0,4,"Last Execution");
+	# $worksheet->write(0,5,"Source");
+	# $worksheet->write(0,6,"User");
+	# $worksheet->write(0,7,"Action");
 
 	my $row = 1;
 
@@ -107,43 +124,47 @@ sub pluginmain {
 		my $userId = $userMapping{$userNumber};
 		my $currentNumber = $userNumber;
 		chomp $currentNumber;
-		$user =~ s/(.*\\)([^_\\]*)_([^\\]*).dat/$1$2_$currentNumber.dat/g;
+		$user =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1$2_$currentNumber.dat/g;
 		$reg = Parse::Win32Registry->new($user);
 		$root_key = $reg->get_root_key;
 
-# LastVistedMRU	
+# LastVistedMRU
 		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32";
 		my @vals;
 		if ($key = $root_key->get_subkey($key_path)) {
 			::rptMsg($key_path);
 			::rptMsg("LastWrite Time ".gmtime($key->get_timestamp())." (UTC)");
-			
+
 			my @subkeys = $key->get_list_of_subkeys();
-			
+
 			if (scalar @subkeys > 0) {
 				foreach my $s (@subkeys) {
 					if ($s->get_name() eq "LastVisitedMRU") {
-						$row = parseLastVisitedMRU($s, $row, $worksheet, $userDictionary{$userId});
+						$row = 1;
+						parseLastVisitedMRU($s, $row, $worksheet, $userDictionary{$userId});
 					}
-					
+
 					if ($s->get_name() eq "OpenSaveMRU") {
-						$row = parseOpenSaveMRU($s, $row, $worksheet, $userDictionary{$userId});
+						$row = 1;
+						parseOpenSaveMRU($s, $row, $worksheet, $userDictionary{$userId});
 					}
-					
+
 					if ($s->get_name() eq "LastVisitedPidlMRU" || $s->get_name() eq "LastVisitedPidlMRULegacy") {
-						$row = parseLastVisitedPidlMRU($s, $row, $worksheet, $userDictionary{$userId});
+						$row = 1;
+						parseLastVisitedPidlMRU($s, $row, $worksheet, $userDictionary{$userId});
 					}
-					
+
 					if ($s->get_name() eq "OpenSavePidlMRU") {
-						$row = parseOpenSavePidlMRU($s, $row, $worksheet, $userDictionary{$userId});
+						$row = 1;
+						parseOpenSavePidlMRU($s, $row, $worksheet, $userDictionary{$userId});
 					}
 				}
 			}
 		}
-
+		$row = 1;
 		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RecentDocs";
 		if ($key = $root_key->get_subkey($key_path)) {
-	# Get RecentDocs values		
+	# Get RecentDocs values
 			my %rdvals = getRDValues($key);
 			if (%rdvals) {
 				my $tag;
@@ -154,7 +175,7 @@ sub pluginmain {
 					$tag = "MRUList";
 				}
 				else {
-					
+
 				}
 				my $count = 0;
 				my @list = split(/,/,$rdvals{$tag});
@@ -162,22 +183,20 @@ sub pluginmain {
 					#File Name
 					$worksheet->write($row,0,$rdvals{$i});
 					#MRU List EX
-					$worksheet->write($row,2,$count);
+					$worksheet->write($row,1,$count);
 					#Extension
-					$worksheet->write($row,3,"*");
+					$worksheet->write($row,2,"*");
 					#User
-					$worksheet->write($row,6,$userDictionary{$userId});
-					#Source
-					$worksheet->write($row,5,"Recent Docs (Registry)");
+					$worksheet->write($row,3,$userDictionary{$userId});
 					$row++;
 					$count++;
 				}
 			}
-	# Get RecentDocs subkeys' values		
+	# Get RecentDocs subkeys' values
 			@subkeys = $key->get_list_of_subkeys();
 			if (scalar(@subkeys) > 0) {
 				foreach my $s (@subkeys) {
-					my $count = 0;					
+					my $count = 0;
 					my %rdvals = getRDValues($s);
 					if (%rdvals) {
 						my $tag;
@@ -188,21 +207,19 @@ sub pluginmain {
 							$tag = "MRUList";
 						}
 						else {
-					
+
 						}
-				
+
 						my @list = split(/,/,$rdvals{$tag});
 						foreach my $i (@list) {
 							#File Name
 							$worksheet->write($row,0,$rdvals{$i});
 							#MRU List EX Order
-							$worksheet->write($row,2,$count);
+							$worksheet->write($row,1,$count);
 							#Extension
-							$worksheet->write($row,3,$s->get_name());
+							$worksheet->write($row,2,$s->get_name());
 							#User
-							$worksheet->write($row,6,$userDictionary{$userId});
-							#Source
-							$worksheet->write($row,5,"Recent Docs (Registry)");
+							$worksheet->write($row,3,$userDictionary{$userId});
 							$row++;
 							$count++;
 						}
@@ -210,6 +227,7 @@ sub pluginmain {
 				}
 			}
 		}
+		$row = 1;
 		my $version;
 		my $tag = 0;
 		my @versions = ("7\.0","8\.0", "9\.0", "10\.0", "11\.0");
@@ -225,12 +243,12 @@ sub pluginmain {
 				$tag = 1;
 			}
 		}
-		
+
 		if ($tag) {
-			$key_path = "Software\\Microsoft\\Office\\".$version;	                 
+			$key_path = "Software\\Microsoft\\Office\\".$version;
 			my $of_key = $root_key->get_subkey($key_path);
 			if ($of_key) {
-	# Attempt to retrieve Word docs			
+	# Attempt to retrieve Word docs
 				my @funcs = ("Open","Save As","File Save");
 				foreach my $func (@funcs) {
 					my $word = "Common\\Open Find\\Microsoft Office Word\\Settings\\".$func."\\File Name MRU";
@@ -247,76 +265,72 @@ sub pluginmain {
 					my @vals = $excel_key->get_list_of_values();
 					if (scalar(@vals) > 0) {
 						my %files;
-	# Retrieve values and load into a hash for sorting			
+	# Retrieve values and load into a hash for sorting
 						foreach my $v (@vals) {
 							my $val = $v->get_name();
 							my $data = $v->get_data();
 							my $tag = (split(/File/,$val))[1];
 							$files{$tag} = $val.":".$data;
 						}
-	# Print sorted content to report file			
+	# Print sorted content to report file
 						my $count = 0;
 						foreach my $u (sort {$a <=> $b} keys %files) {
 							my ($val,$data) = split(/:/,$files{$u},2);
 							#Extension
 							my $extension = $data;
 							$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
-							$worksheet->write($row,3,$extension);
+							$worksheet->write($row,6,$extension);
 							#MRU Ex Order
-							$worksheet->write($row,2,$count);
+							$worksheet->write($row,5,$count);
 							#Last Execution
 							my $datetime = $data;
 							$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
-							$worksheet->write($row,4,$datetime);
+							$worksheet->write($row,7,$datetime);
 							$data =~ s/ $datetime//;
-							$worksheet->write($row,1,$data);
+							$worksheet->write($row,4,$data);
 							#User
-							$worksheet->write($row,6,$userDictionary{$userId});
-							#Source
-							$worksheet->write($row,5,"Office Recent Docs (Registry)");
+							$worksheet->write($row,8,$userDictionary{$userId});
 							$row++;
 							$count++;
 						}
 					}
 				}
-	# Attempt to retrieve PowerPoint docs			
+	# Attempt to retrieve PowerPoint docs
 				my $ppt = 'PowerPoint\\Recent File List';
 				if (my $ppt_key = $of_key->get_subkey($ppt)) {
 					my @vals = $ppt_key->get_list_of_values();
 					if (scalar(@vals) > 0) {
 						my %files;
-	# Retrieve values and load into a hash for sorting			
+	# Retrieve values and load into a hash for sorting
 						foreach my $v (@vals) {
 							my $val = $v->get_name();
 							my $data = $v->get_data();
 							my $tag = (split(/File/,$val))[1];
 							$files{$tag} = $val.":".$data;
 						}
-	# Print sorted content to report file			
+	# Print sorted content to report file
 						my $count = 0;
 						foreach my $u (sort {$a <=> $b} keys %files) {
 							my ($val,$data) = split(/:/,$files{$u},2);
 							#Extension
 							my $extension = $data;
 							$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
-							$worksheet->write($row,3,$extension);
+							$worksheet->write($row,6,$extension);
 							#MRU Ex Order
-							$worksheet->write($row,2,$count);
+							$worksheet->write($row,5,$count);
 							#Last Execution
 							my $datetime = $data;
 							$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
-							$worksheet->write($row,4,$datetime);
+							$worksheet->write($row,7,$datetime);
 							$data =~ s/ $datetime//;
-							$worksheet->write($row,1,$data);
+							$worksheet->write($row,4,$data);
 							#User
-							$worksheet->write($row,6,$userDictionary{$userId});
-							#Source
-							$worksheet->write($row,5,"Office Recent Docs (Registry)");
+							$worksheet->write($row,8,$userDictionary{$userId});
 							$row++;
 							$count++;
 						}
-					}		
-				}			
+					}
+				}
 			}
 		}
 		else {
@@ -332,9 +346,9 @@ sub pluginmain {
 					$tag = 1;
 				}
 			}
-			
+
 			if ($tag) {
-				$key_path = "Software\\Microsoft\\Office\\".$version;	                 
+				$key_path = "Software\\Microsoft\\Office\\".$version;
 				my $of_key = $root_key->get_subkey($key_path);
 				if ($of_key) {
 		# Attempt to retrieve Word docs
@@ -343,7 +357,7 @@ sub pluginmain {
 						my @vals = $word_key->get_list_of_values();
 						if (scalar(@vals) > 0) {
 							my %files;
-		# Retrieve values and load into a hash for sorting			
+		# Retrieve values and load into a hash for sorting
 							foreach my $v (@vals) {
 								my $val = $v->get_name();
 								if ($val eq "Max Display") { next; }
@@ -351,32 +365,30 @@ sub pluginmain {
 								my $tag = (split(/Item/,$val))[1];
 								$files{$tag} = $val.":".$data;
 							}
-		# Print sorted content to report file			
+		# Print sorted content to report file
 							my $count = 0;
 							foreach my $u (sort {$a <=> $b} keys %files) {
 								my ($val,$data) = split(/:/,$files{$u},2);
 								#Extension
 								my $extension = $data;
 								$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
-								$worksheet->write($row,3,$extension);
+								$worksheet->write($row,6,$extension);
 								#MRU Ex Order
-								$worksheet->write($row,2,$count);
+								$worksheet->write($row,5,$count);
 								#Last Execution
 								my $datetime = $data;
 								$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
-								$worksheet->write($row,4,$datetime);
+								$worksheet->write($row,7,$datetime);
 								$data =~ s/ $datetime//;
-								$worksheet->write($row,1,$data);
+								$worksheet->write($row,4,$data);
 								#User
-								$worksheet->write($row,6,$userDictionary{$userId});
-								#Source
-								$worksheet->write($row,5,"Office Recent Docs (Registry)");
+								$worksheet->write($row,8,$userDictionary{$userId});
 								$row++;
 								$count++;
 							}
 						}
 					}
-					
+
 		# Attempt to retrieve Excel docs
 					my $excel = 'Excel\\File MRU';
 					if (my $excel_key = $of_key->get_subkey($excel)) {
@@ -385,7 +397,7 @@ sub pluginmain {
 						my @vals = $excel_key->get_list_of_values();
 						if (scalar(@vals) > 0) {
 							my %files;
-		# Retrieve values and load into a hash for sorting			
+		# Retrieve values and load into a hash for sorting
 							foreach my $v (@vals) {
 								my $val = $v->get_name();
 								if ($val eq "Max Display") { next; }
@@ -393,26 +405,24 @@ sub pluginmain {
 								my $tag = (split(/Item/,$val))[1];
 								$files{$tag} = $val.":".$data;
 							}
-		# Print sorted content to report file			
+		# Print sorted content to report file
 							my $count = 0;
 							foreach my $u (sort {$a <=> $b} keys %files) {
 								my ($val,$data) = split(/:/,$files{$u},2);
 								#Extension
 								my $extension = $data;
 								$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
-								$worksheet->write($row,3,$extension);
+								$worksheet->write($row,6,$extension);
 								#MRU Ex Order
-								$worksheet->write($row,2,$count);
+								$worksheet->write($row,5,$count);
 								#Last Execution
 								my $datetime = $data;
 								$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
-								$worksheet->write($row,4,$datetime);
+								$worksheet->write($row,7,$datetime);
 								$data =~ s/ $datetime//;
-								$worksheet->write($row,1,$data);
+								$worksheet->write($row,4,$data);
 								#User
-								$worksheet->write($row,6,$userDictionary{$userId});
-								#Source
-								$worksheet->write($row,5,"Office Recent Docs (Registry)");
+								$worksheet->write($row,8,$userDictionary{$userId});
 								$row++;
 								$count++;
 							}
@@ -427,49 +437,7 @@ sub pluginmain {
 						my @vals = $access_key->get_list_of_values();
 						if (scalar(@vals) > 0) {
 							my %files;
-		# Retrieve values and load into a hash for sorting			
-							foreach my $v (@vals) {
-								my $val = $v->get_name();
-								if ($val eq "Max Display") { next; }
-								my $data = getWinTS($v->get_data());
-								my $tag = (split(/Item/,$val))[1];
-								$files{$tag} = $val.":".$data;
-							}
-		# Print sorted content to report file			
-							my $count = 0;
-							foreach my $u (sort {$a <=> $b} keys %files) {
-								my ($val,$data) = split(/:/,$files{$u},2);
-								#Extension
-								my $extension = $data;
-								$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
-								$worksheet->write($row,3,$extension);
-								#MRU Ex Order
-								$worksheet->write($row,2,$count);
-								#Last Execution
-								my $datetime = $data;
-								$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
-								$worksheet->write($row,4,$datetime);
-								$data =~ s/ $datetime//;
-								$worksheet->write($row,1,$data);
-								#User
-								$worksheet->write($row,6,$userDictionary{$userId});
-								#Source
-								$worksheet->write($row,5,"Office Recent Docs (Registry)");
-								$row++;
-								$count++;
-							}
-						}
-					}
-
-		# Attempt to retrieve PowerPoint docs			
-					my $ppt = 'PowerPoint\\File MRU';
-					if (my $ppt_key = $of_key->get_subkey($ppt)) {
-						::rptMsg($key_path."\\".$ppt);
-						::rptMsg("LastWrite Time ".gmtime($ppt_key->get_timestamp())." (UTC)");
-						my @vals = $ppt_key->get_list_of_values();
-						if (scalar(@vals) > 0) {
-							my %files;
-		# Retrieve values and load into a hash for sorting			
+		# Retrieve values and load into a hash for sorting
 							foreach my $v (@vals) {
 								my $val = $v->get_name();
 								if ($val eq "Max Display") { next; }
@@ -478,30 +446,68 @@ sub pluginmain {
 								$files{$tag} = $val.":".$data;
 							}
 		# Print sorted content to report file
-							my $count = 0;			
+							my $count = 0;
 							foreach my $u (sort {$a <=> $b} keys %files) {
 								my ($val,$data) = split(/:/,$files{$u},2);
 								#Extension
 								my $extension = $data;
 								$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
-								$worksheet->write($row,3,$extension);
+								$worksheet->write($row,6,$extension);
 								#MRU Ex Order
-								$worksheet->write($row,2,$count);
+								$worksheet->write($row,5,$count);
 								#Last Execution
 								my $datetime = $data;
 								$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
-								$worksheet->write($row,4,$datetime);
+								$worksheet->write($row,7,$datetime);
 								$data =~ s/ $datetime//;
-								$worksheet->write($row,1,$data);
+								$worksheet->write($row,4,$data);
 								#User
-								$worksheet->write($row,6,$userDictionary{$userId});
-								#Source
-								$worksheet->write($row,5,"Office Recent Docs (Registry)");
+								$worksheet->write($row,8,$userDictionary{$userId});
 								$row++;
 								$count++;
 							}
-						}	
-					}		
+						}
+					}
+
+		# Attempt to retrieve PowerPoint docs
+					my $ppt = 'PowerPoint\\File MRU';
+					if (my $ppt_key = $of_key->get_subkey($ppt)) {
+						::rptMsg($key_path."\\".$ppt);
+						::rptMsg("LastWrite Time ".gmtime($ppt_key->get_timestamp())." (UTC)");
+						my @vals = $ppt_key->get_list_of_values();
+						if (scalar(@vals) > 0) {
+							my %files;
+		# Retrieve values and load into a hash for sorting
+							foreach my $v (@vals) {
+								my $val = $v->get_name();
+								if ($val eq "Max Display") { next; }
+								my $data = getWinTS($v->get_data());
+								my $tag = (split(/Item/,$val))[1];
+								$files{$tag} = $val.":".$data;
+							}
+		# Print sorted content to report file
+							my $count = 0;
+							foreach my $u (sort {$a <=> $b} keys %files) {
+								my ($val,$data) = split(/:/,$files{$u},2);
+								#Extension
+								my $extension = $data;
+								$extension =~ s/.*(\.[a-zA-Z0-9]*).*/$1/;
+								$worksheet->write($row,6,$extension);
+								#MRU Ex Order
+								$worksheet->write($row,5,$count);
+								#Last Execution
+								my $datetime = $data;
+								$datetime =~ s/.*\.[a-zA-Z0-9]* (.*)/$1/;
+								$worksheet->write($row,7,$datetime);
+								$data =~ s/ $datetime//;
+								$worksheet->write($row,4,$data);
+								#User
+								$worksheet->write($row,8,$userDictionary{$userId});
+								$row++;
+								$count++;
+							}
+						}
+					}
 				}
 			}
 		}
@@ -510,10 +516,10 @@ sub pluginmain {
 
 sub getRDValues {
 	my $key = shift;
-	
+
 	my $mru = "MRUList";
 	my %rdvals;
-	
+
 	my @vals = $key->get_list_of_values();
 	if (scalar @vals > 0) {
 		foreach my $v (@vals) {
@@ -571,7 +577,7 @@ sub parseLastVisitedMRU {
 	my %lvmru;
 	my @mrulist;
 	my @vals = $key->get_list_of_values();
-	
+
 	if (scalar(@vals) > 0) {
 # First, read in all of the values and the data
 		foreach my $v (@vals) {
@@ -587,20 +593,17 @@ sub parseLastVisitedMRU {
 				$file =~ s/\x00//g;
 				$dir  =~ s/\x00//g;
 				#File Name
-				$worksheet->write($row,0,$file);
+				$worksheet->write($row,9,$file);
 				#File Path
-				$worksheet->write($row,1,$dir);
+				$worksheet->write($row,10,$dir);
 				#MRU List EX
-				$worksheet->write($row,2,$m);
+				$worksheet->write($row,11,$m);
 				#User
-				$worksheet->write($row,6,$user);
-				#Source
-				$worksheet->write($row,5,"Last Visited MRU (Registry)");
+				$worksheet->write($row,12,$user);
 				$row++;
 			}
-		}				
+		}
 	}
-	return $row;
 }
 
 sub parseOpenSaveMRU {
@@ -608,16 +611,15 @@ sub parseOpenSaveMRU {
 	my $row = shift;
 	my $worksheet = shift;
 	my $user = shift;
-	
+
 	$row = parseOpenSaveValues($key, $row, $worksheet, $user);
 # Now, let's get the subkeys
 	my @sk = $key->get_list_of_subkeys();
 	if (scalar(@sk) > 0) {
 		foreach my $s (@sk) {
-			$row = parseOpenSaveValues($s, $row, $worksheet, $user);
+			parseOpenSaveValues($s, $row, $worksheet, $user);
 		}
 	}
-	return $row;
 }
 
 sub parseOpenSaveValues {
@@ -636,20 +638,18 @@ sub parseOpenSaveValues {
 			delete($osmru{MRUList});
 			foreach my $m (@mrulist) {
 				#File Path
-				$worksheet->write($row,1,$osmru{$m});
+				$worksheet->write($row,13,$osmru{$m});
 				#MRU List EX
-				$worksheet->write($row,2,$m);
+				$worksheet->write($row,14,$m);
 				#User
-				$worksheet->write($row,3,$user);
-				#Source
-				$worksheet->write($row,5,"Open Save MRU (Registry)");
+				$worksheet->write($row,16,$user);
 				#Extension
-				$worksheet->write($row,3,$key->get_name());
+				$worksheet->write($row,15,$key->get_name());
 				$row++;
 			}
 		}
 	}
-	return $row;	
+  return $row;
 }
 
 sub parseLastVisitedPidlMRU {
@@ -662,19 +662,19 @@ sub parseLastVisitedPidlMRU {
 	my @vals = $key->get_list_of_values();
 	my %mru;
 	my $count = 0;
-	
+
 	if (scalar(@vals) > 0) {
 # First, read in all of the values and the data
 		foreach my $v (@vals) {
 			$lvmru{$v->get_name()} = $v->get_data();
 		}
-# Then, remove the MRUList value	
+# Then, remove the MRUList value
 		if (exists $lvmru{MRUListEx}) {
 			my @mrulist = unpack("V*",$lvmru{MRUListEx});
 			foreach my $n (0..(scalar(@mrulist) - 2)) {
 				$mru{$count++} = $lvmru{$mrulist[$n]};
 			}
-			delete $mru{0xffffffff};	
+			delete $mru{0xffffffff};
 
 			foreach my $m (sort {$a <=> $b} keys %mru) {
 				my ($file,$shell) = split(/\x00\x00/,$mru{$m},2);
@@ -682,20 +682,17 @@ sub parseLastVisitedPidlMRU {
 				$shell =~ s/^\x00//;
 				my $str = parseShellItem($shell);
 				#File Name
-				$worksheet->write($row,0,$file);
+				$worksheet->write($row,9,$file);
 				#File Path
-				$worksheet->write($row,1,$str);
+				$worksheet->write($row,10,$str);
 				#MRU List EX
-				$worksheet->write($row,2,$m);
+				$worksheet->write($row,11,$m);
 				#User
-				$worksheet->write($row,6,$user);
-				#Source
-				$worksheet->write($row,5,"Last Visited MRU (Registry)");
+				$worksheet->write($row,12,$user);
 				$row++;
 			}
 		}
 	}
-	return $row;
 }
 
 #-----------------------------------------------------------
@@ -707,16 +704,16 @@ sub parseOpenSavePidlMRU {
 	my $worksheet = shift;
 	my $user = shift;
 	my @subkeys = $key->get_list_of_subkeys();
-	
+
 	if (scalar(@subkeys) > 0) {
 		foreach my $s (@subkeys) {
 			my @vals = $s->get_list_of_values();
-			
+
 			my %lvmru = ();
 			my @mrulist = ();
 			my %mru = ();
 			my $count = 0;
-			
+
 			if (scalar(@vals) > 0) {
 # First, read in all of the values and the data
 				foreach my $v (@vals) {
@@ -728,27 +725,24 @@ sub parseOpenSavePidlMRU {
 					foreach my $n (0..(scalar(@mrulist) - 2)) {
 						$mru{$count++} = $lvmru{$mrulist[$n]};
 					}
-					delete $mru{0xffffffff};	
+					delete $mru{0xffffffff};
 
 					foreach my $m (sort {$a <=> $b} keys %mru) {
 						my $str = parseShellItem($mru{$m});
 						#File Path
-						$worksheet->write($row,1,$str);
+						$worksheet->write($row,13,$str);
 						#MRUListEX
-						$worksheet->write($row,2,$m);
-						#Source		
-						$worksheet->write($row,5,"Open Save MRU (Registry)");
+						$worksheet->write($row,14,$m);
 						#User
-						$worksheet->write($row,6,$user);
+						$worksheet->write($row,16,$user);
 						#Extension
-						$worksheet->write($row,3,$s->get_name());
+						$worksheet->write($row,15,$s->get_name());
 						$row++;
 					}
 				}
 			}
 		}
 	}
-	return $row;
 }
 
 #-----------------------------------------------------------
@@ -758,26 +752,26 @@ sub parseShellItem {
 	my $data = shift;
 	my $len = length($data);
 	my $str;
-	
+
 	my $tag = 1;
 	my $cnt = 0;
 	while ($tag) {
 		my %item = ();
 		my $sz = unpack("v",substr($data,$cnt,2));
 		$tag = 0 if (($sz == 0) || ($cnt + $sz > $len));
-		
+
 		my $dat = substr($data,$cnt,$sz);
 		my $type = unpack("C",substr($dat,2,1));
 		my $followingchar = unpack("C",substr($dat,3,1));
 #		::rptMsg(sprintf "  Size: ".$sz."  Type: 0x%x",$type);
-		
+
 		if ($type == 0x1F) {
-# System Folder 			
+# System Folder
  			%item = parseSystemFolderEntry($dat);
  			$str .= "\\".$item{name};
  		}
  		elsif ($type == 0x2F) {
-# Volume (Drive Letter) 			
+# Volume (Drive Letter)
  			%item = parseDriveEntry($dat);
  			$item{name} =~ s/\\$//;
  			$str .= "\\".$item{name};
@@ -795,7 +789,7 @@ sub parseShellItem {
 				%item = parseNetworkEntry($dat);
 			}
 			else {
-				%item = parseNetworkEntry($dat); 
+				%item = parseNetworkEntry($dat);
 			}
 			$str .= "\\".$item{name};
  		}
@@ -803,7 +797,7 @@ sub parseShellItem {
  			$item{name} = sprintf "Unknown Type (0x%x)",$type;
  			$str .= "\\".$item{name};
 # 			probe($dat);
- 		}		
+ 		}
 		$cnt += $sz;
 	}
 	$str =~ s/^\\//;
@@ -815,17 +809,17 @@ sub parseFilePath {
 	my $len = length($data);
 	my $tag = 1;
 	my $cnt = 0;
-	my $check = 0; 
+	my $check = 0;
 	my $str;
 	while ($tag) {
 		my %item = ();
 		my $sz = unpack("v",substr($data,$cnt,2));
 		$tag = 0 if (($sz == 0) || ($cnt + $sz > $len));
-		
+
 		my $dat = substr($data,$cnt,$sz);
 		my $type = unpack("C",substr($dat,2,1));
 #		::rptMsg(sprintf "  Size: ".$sz."  Type: 0x%x",$type);
-		
+
 		if ($type == $id) {
 			$check = 1;
 		}
@@ -843,7 +837,7 @@ sub parseFilePath {
 sub parseSystemFolderEntry {
 	my $data     = shift;
 	my %item = ();
-	
+
 	my %vals = (0x00 => "Explorer",
 	            0x42 => "Libraries",
 	            0x44 => "Users",
@@ -856,7 +850,7 @@ sub parseSystemFolderEntry {
 	            0x70 => "Control Panel",
 	            0x78 => "Recycle Bin",
 	            0x80 => "My Games");
-	
+
 	$item{type} = unpack("C",substr($data,2,1));
 	$item{id}   = unpack("C",substr($data,3,1));
 	if (exists $vals{$item{id}}) {
@@ -899,9 +893,9 @@ sub parseDriveEntry {
 #-----------------------------------------------------------
 sub parseNetworkEntry {
 	my $data = shift;
-	my %item = ();	
+	my %item = ();
 	$item{type} = unpack("C",substr($data,2,1));
-	
+
 	my @n = split(/\x00/,substr($data,4,length($data) - 4));
 	$item{name} = $n[0];
 	$item{name} =~ s/^\W//;
@@ -914,13 +908,13 @@ sub parseFolderEntry {
 	my $data     = shift;
 	my $sz = shift;
 	my %item = ();
-	
+
 	$item{type} = unpack("C",substr($data,2,1));
-# Type 0x74 folders have a slightly different format	
-	
+# Type 0x74 folders have a slightly different format
+
 	my $ofs_mdate;
 	my $ofs_shortname;
-	
+
 	if ($item{type} == 0x74) {
 		$ofs_mdate = 0x12;
 	}
@@ -931,20 +925,20 @@ sub parseFolderEntry {
 		$ofs_mdate = 0x08;
 	}
 	else {}
-# some type 0x32 items will include a file size	
+# some type 0x32 items will include a file size
 	if ($item{type} == 0x32) {
 		my $size = unpack("V",substr($data,4,4));
 		if ($size != 0) {
 			$item{filesize} = $size;
 		}
 	}
-	
+
 	my @m = unpack("vv",substr($data,$ofs_mdate,4));
 	($item{mtime_str},$item{mtime}) = convertDOSDate($m[0],$m[1]);
-	
+
 # Need to read in short name; nul-term ASCII
 #	$item{shortname} = (split(/\x00/,substr($data,12,length($data) - 12),2))[0];
-	$ofs_shortname = $ofs_mdate + 6;	
+	$ofs_shortname = $ofs_mdate + 6;
 	my $tag = 1;
 	my $cnt = 0;
 	my $str = "";
@@ -961,7 +955,7 @@ sub parseFolderEntry {
 #	$str =~ s/\x00//g;
 	my $shortname = $str;
 	my $ofs = $ofs_shortname + $cnt + 1;
-# Read progressively, 1 byte at a time, looking for 0xbeef	
+# Read progressively, 1 byte at a time, looking for 0xbeef
 	$tag = 1;
 	$cnt = 0;
 	while ($tag) {
@@ -973,19 +967,19 @@ sub parseFolderEntry {
 		}
 	}
 	$item{extver} = unpack("v",substr($data,$ofs + $cnt - 4,2));
-	
+
 #	::rptMsg(sprintf "  BEEF Offset: 0x%x",$ofs + $cnt);
 #	::rptMsg("  Version: ".$item{extver});
-	
+
 	$ofs = $ofs + $cnt + 2;
-	
+
 	@m = unpack("vv",substr($data,$ofs,4));
 	($item{ctime_str},$item{ctime}) = convertDOSDate($m[0],$m[1]);
 	$ofs += 4;
 	@m = unpack("vv",substr($data,$ofs,4));
 	($item{atime_str},$item{atime}) = convertDOSDate($m[0],$m[1]);
 	$ofs += 4;
-	
+
 	my $jmp;
 	if ($item{extver} == 0x03) {
 		$jmp = 8;
@@ -997,12 +991,12 @@ sub parseFolderEntry {
 		$jmp = 26;
 	}
 	else {}
-	
+
 	$ofs += $jmp;
 	::rptMsg(sprintf "  Offset: 0x%x",$ofs);
-	
+
 	$str = substr($data,$ofs,length($data) - $ofs - 1);
-	
+
 	my $longname;
 	my @short;
 	my $test = 1;
@@ -1021,7 +1015,7 @@ sub parseFolderEntry {
 		if (index($longname, $substring) != -1) {
 			$longname =~ s/$substring.*$//;
 			$item{name} = $longname;
-		} 
+		}
 	}
 	else {
 		$item{name} = $shortname;
@@ -1039,7 +1033,7 @@ sub parseFolderEntry {
 sub convertDOSDate {
 	my $date = shift;
 	my $time = shift;
-	
+
 	if ($date == 0x00 || $time == 0x00){
 		return (0,0);
 	}
@@ -1073,7 +1067,7 @@ sub convertDOSDate {
 sub probe {
 	my $data = shift;
 	my @d = printData($data);
-	
+
 	foreach (0..(scalar(@d) - 1)) {
 		print $d[$_]."\n";
 	}
@@ -1087,16 +1081,16 @@ sub probe {
 sub printData {
 	my $data = shift;
 	my $len = length($data);
-	
+
 	my @display = ();
-	
+
 	my $loop = $len/16;
 	$loop++ if ($len%16);
-	
+
 	foreach my $cnt (0..($loop - 1)) {
 # How much is left?
 		my $left = $len - ($cnt * 16);
-		
+
 		my $n;
 		($left < 16) ? ($n = $left) : ($n = 16);
 
@@ -1118,4 +1112,4 @@ sub printData {
 	return @display;
 }
 
-1;		
+1;

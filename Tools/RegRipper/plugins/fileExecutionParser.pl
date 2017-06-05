@@ -1,5 +1,5 @@
 #-----------------------------------------------------------
-# appcompatcache.pl, userassist.pl, 
+# appcompatcache.pl, userassist.pl,
 #
 # History:
 #  20160528 - updated code to not de-dup entries based on filename
@@ -9,13 +9,13 @@
 #  20140724 - update based on data provided by Shafik Punja
 #  20130801 - added initial Win8 support; very alpha at the moment
 #  20130603 - updated alerts
-#  20130509 - added additional alerts/warnings 
+#  20130509 - added additional alerts/warnings
 #  20130425 - added alertMsg() functionality
 #  20120817 - updated to address issue with residual data in XP data blocks
 #  20120722 - updated the %config hash
 #  20120523 - updated to send all files to a single hash, and check for temp paths
 #  20120515 - Updated to support 64-bit Win2003 and Vista/Win2008
-#  20120424 - Modified/updated 
+#  20120424 - Modified/updated
 #  20120418 - created
 #
 # References:
@@ -27,7 +27,7 @@
 #
 # This plugin is based solely on the work and examples provided by Mandiant;
 # thanks to them for sharing this information, and making the plugin possible.
-# 
+#
 # copyright 2016 Quantum Analytics Research, LLC
 # Author: H. Carvey, keydet89@yahoo.com
 #-----------------------------------------------------------
@@ -48,7 +48,7 @@ my %config = (hive          => "System",
 
 sub getConfig{return %config}
 sub getShortDescr {
-	return "Parse files from System hive AppCompatCache";	
+	return "Parse files from System hive AppCompatCache";
 }
 sub getDescr{}
 sub getRefs {}
@@ -63,9 +63,9 @@ sub pluginmain {
 	my $class = shift;
 	my $user = shift;
 	my $software = $user;
-  	my $output = $user;
-  	$output =~ s/(.*\\)([^_\\]*)_([^\\]*).dat$/$1/g;
-	$software =~ s/(.*\\)([^_\\]*)_([^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
+	my $output = $user;
+	$output =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1/g;
+	$software =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
 	my $system = $software;
 	$system =~ s/(.*)SOFTWARE([^\\]*$)/$1SYSTEM$2/g;
 	my $reg = Parse::Win32Registry->new($system);
@@ -73,6 +73,23 @@ sub pluginmain {
 
 	my $workbook = Excel::Writer::XLSX->new($output.'FileExecutionParser.xlsx');
 	my $worksheet = $workbook->add_worksheet();
+	$worksheet->write(0,0,"1");
+	$worksheet->write(0,1,"2");
+	$worksheet->write(0,2,"3");
+	$worksheet->write(0,3,"4");
+	$worksheet->write(0,4,"5");
+	$worksheet->write(0,5,"6");
+	$worksheet->write(0,6,"7");
+	$worksheet->write(0,7,"8");
+	$worksheet->write(0,8,"9");
+	$worksheet->write(0,9,"10");
+	$worksheet->write(0,10,"11");
+	$worksheet->write(0,11,"12");
+	$worksheet->write(0,12,"13");
+	$worksheet->write(0,13,"14");
+	$worksheet->write(0,14,"15");
+
+
 	my $row = 1;
 # First thing to do is get the ControlSet00x marked current...this is
 # going to be used over and over again in plugins that access the system
@@ -86,26 +103,26 @@ sub pluginmain {
 		my $appcompat_path = $ccs."\\Control\\Session Manager";
 		my $appcompat;
 		if ($appcompat = $root_key->get_subkey($appcompat_path)) {
-			
+
 			my $app_data;
-			
+
 			eval {
 				$app_data = $appcompat->get_subkey("AppCompatibility")->get_value("AppCompatCache")->get_data();
 				::rptMsg($appcompat_path."\\AppCompatibility");
-			  ::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatibility")->get_timestamp())." Z");
+			  	::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatibility")->get_timestamp())." Z");
 			};
-			
+
 			eval {
 				$app_data = $appcompat->get_subkey("AppCompatCache")->get_value("AppCompatCache")->get_data();
 				::rptMsg($appcompat_path."\\AppCompatCache");
-			  ::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatCache")->get_timestamp())." Z");
+			  	::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatCache")->get_timestamp())." Z");
 			};
-				
+
 #			::rptMsg("Length of data: ".length($app_data));
 #			probe($app_data);
 			my $sig = unpack("V",substr($app_data,0,4));
 			::rptMsg(sprintf "Signature: 0x%x",$sig);
-			
+
 			if ($sig == 0xdeadbeef) {
 				eval {
 					appXP32Bit($app_data);
@@ -120,30 +137,31 @@ sub pluginmain {
 				eval {
 					appWin7($app_data);
 				};
-			
+
 			}
 			elsif ($sig == 0x80) {
 #				::rptMsg("Possible Win8 system\.");
 #				::rptMsg(sprintf "Data Length: 0x%08x",length($app_data));
 				appWin8($app_data);
 #				probe($app_data);
-				
+
 			}
 			elsif ($sig == 0x30) {
 # Windows 10 system
-				appWin10($app_data);				
+				appWin10($app_data);
 			}
 			else {
 				::rptMsg(sprintf "Unknown signature: 0x%x",$sig);
 			}
 # this is where we print out the files
-			$worksheet->write(0,0,"Source File");
-			$worksheet->write(0,1,"Path");
-			$worksheet->write(0,2,"Program Name");
-			$worksheet->write(0,3,"User");
-			$worksheet->write(0,4,"Last Execution");
-			$worksheet->write(0,5,"Source");
-			$worksheet->write(0,6,"Action");
+			# $worksheet->write(0,0,"Source File");
+			# $worksheet->write(0,1,"Path");
+			# $worksheet->write(0,2,"Program Name");
+			# $worksheet->write(0,3,"User");
+			# $worksheet->write(0,4,"Last Modified/Last Execution");
+			# $worksheet->write(0,5,"Last Updated");
+			# $worksheet->write(0,6,"Source");
+			# $worksheet->write(0,7,"Action");
 			foreach my $f (keys %files) {
 				my $modtime = $files{$f}{modtime};
 				if ($modtime == 0) {
@@ -152,11 +170,20 @@ sub pluginmain {
 				else {
 					$modtime = gmtime($modtime)." Z";
 				}
-				
-				$worksheet->write($row,1,$files{$f}{filename});
-				$worksheet->write($row,4,$modtime);
-				$worksheet->write($row,6,"Executed") if (exists $files{$f}{executed});
-				$worksheet->write($row,5,"AppCompatPache (Registry)");
+
+				if (exists $files{$f}{updtime}) {
+					my $updtime = $files{$f}{updtime};
+					$worksheet->write($row,2,$updtime);
+				}
+
+				if (exists $files{$f}{size}) {
+					my $size = $files{$f}{size};
+					$worksheet->write($row,3,$size);
+				}
+
+				$worksheet->write($row,0,$files{$f}{filename});
+				$worksheet->write($row,1,$modtime);
+				$worksheet->write($row,4,"Executed") if (exists $files{$f}{executed});
 				$row++;
 			}
 		}
@@ -198,7 +225,7 @@ sub pluginmain {
 	    ($temp, $who) = split /\\/, $who, 2;
 	    $userMapping{$rest} = $who;
 	}
-
+	$row = 1;
 	#Volume GUID => User Name
 	my %ownerDictionary;
 	my @userNumbers = keys %userMapping;
@@ -207,7 +234,7 @@ sub pluginmain {
 		my $userId = $userMapping{$userNumber};
 		my $currentNumber = $userNumber;
 		chomp $currentNumber;
-		$user =~ s/(.*\\)([^_\\]*)_([^\\]*).dat/$1$2_$currentNumber.dat/g;
+		$user =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1$2_$currentNumber.dat/g;
 		$reg = Parse::Win32Registry->new($user);
 		$root_key = $reg->get_root_key;
 		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist";
@@ -217,12 +244,11 @@ sub pluginmain {
 				foreach my $s (@subkeys) {
 					my %ua = processKey($s);
 					foreach my $t (reverse sort {$a <=> $b} keys %ua) {
-						$worksheet->write($row,4,gmtime($t)." Z");
 						foreach my $i (@{$ua{$t}}) {
-							$worksheet->write($row,3,$userDictionary{$userId});
-							$worksheet->write($row,5,"User Assist (Registry)");
+							$worksheet->write($row,7,gmtime($t)." Z");
+							$worksheet->write($row,8,$userDictionary{$userId});
 							$worksheet->write($row,6,$s->get_name());
-							$worksheet->write($row,1,$i);
+							$worksheet->write($row,5,$i);
 						}
 						$row++;
 					}
@@ -233,21 +259,23 @@ sub pluginmain {
 		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32";
 		if (my $key = $root_key->get_subkey($key_path)) {
 			my @subkeys = $key->get_list_of_subkeys();
-		
+
 			if (scalar @subkeys > 0) {
 				foreach my $s (@subkeys) {
 					if ($s->get_name() eq "LastVisitedMRU") {
-						$row = parseLastVisitedMRU($s, $row, $worksheet, $userDictionary{$userId}); 
+						$row = 1;
+						parseLastVisitedMRU($s, $row, $worksheet, $userDictionary{$userId});
 					}
 
 					if ($s->get_name() eq "LastVisitedPidlMRU" || $s->get_name() eq "LastVisitedPidlMRULegacy") {
-						$row = parseLastVisitedPidlMRU($s, $row, $worksheet, $userDictionary{$userId}); 
+						$row = 1;
+						parseLastVisitedPidlMRU($s, $row, $worksheet, $userDictionary{$userId});
 					}
 				}
 			}
 		}
 
-
+		$row = 1;
 		$key_path = 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU';
 		if (my $key = $root_key->get_subkey($key_path)) {
 			my @vals = $key->get_list_of_values();
@@ -259,9 +287,8 @@ sub pluginmain {
 					$mru = $v->get_data() if ($v->get_name() eq "MRUList");
 				}
 				foreach my $r (sort keys %runvals) {
-					$worksheet->write($row,2,$runvals{$r});
-					$worksheet->write($row,3,$userDictionary{$userId});
-					$worksheet->write($row,5,"Run MRU (Registry)");
+					$worksheet->write($row,13,$runvals{$r});
+					$worksheet->write($row,14,$userDictionary{$userId});
 					$row++;
 				}
 			}
@@ -278,7 +305,7 @@ sub appXP32Bit {
 	::rptMsg("WinXP, 32-bit");
 # header is 400 bytes; each structure is 552 bytes in size
 	my $num_entries = unpack("V",substr($data,4,4));
-	
+
 	foreach my $i (0..($num_entries - 1)) {
 		my $x = substr($data,(400 + ($i * 552)),552);
 		my $file = (split(/\00\00/,substr($x,0,488)))[0];
@@ -291,7 +318,7 @@ sub appXP32Bit {
 		($sz2 == 0)?($sz = $sz1):($sz = "Too big");
 		my ($up1,$up2)   = unpack("VV",substr($x,544,8));
 		my $updtime      = ::getTime($up1,$up2);
-		
+
 		$files{$i}{filename} = $file;
 		$files{$i}{size} = $sz;
 		$files{$i}{modtime} = $modtime;
@@ -319,19 +346,19 @@ sub appWin2k3 {
 			::rptMsg("Win2K3/Vista/Win2K8, 32-bit");
 		}
 	}
-	
+
 	foreach my $i (0..($num_entries - 1)) {
 		my $struct = substr($data,(8 + ($struct_sz * $i)),$struct_sz);
 		if ($struct_sz == 24) {
 			my ($len,$max_len,$ofs,$t0,$t1,$f0,$f1) = unpack("vvVVVVV",$struct);
-			
+
 			my $file = substr($data,$ofs,$len);
 			$file =~ s/\00//g;
 			$file =~ s/^\\\?\?\\//;
 			my $t = ::getTime($t0,$t1);
 			$files{$i}{filename} = $file;
 			$files{$i}{modtime} = $t;
-#			$files{$file}{size} = $f0 if (($f1 == 0) && ($f0 > 3));
+			$files{$i}{size} = $f0 if (($f1 == 0) && ($f0 > 3));
 			$files{$i}{executed} = 1 if (($f0 < 4) && ($f0 & 0x2));
 		}
 		elsif ($struct_sz == 32) {
@@ -360,7 +387,7 @@ sub appWin7 {
 	my $struct_sz = 0;
 	my $num_entries = unpack("V",substr($data,4,4));
 #	::rptMsg("Num_entries: ".$num_entries);
-# 128-byte header	
+# 128-byte header
 	my ($len,$max_len,$padding) = unpack("vvV",substr($data,128,8));
 	if (($max_len - $len) == 2) {
 		if ($padding == 0) {
@@ -381,7 +408,7 @@ sub appWin7 {
 			$file =~ s/\00//g;
 			$file =~ s/^\\\?\?\\//;
 			my $t = ::getTime($t0,$t1);
- 			$files{$i}{filename} = $file;	
+ 			$files{$i}{filename} = $file;
 			$files{$i}{modtime} = $t;
 			$files{$i}{executed} = 1 if ($f0 & 0x2);
 		}
@@ -391,7 +418,7 @@ sub appWin7 {
 			$file =~ s/\00//g;
 			$file =~ s/^\\\?\?\\//;
 			my $t = ::getTime($t0,$t1);
- 			$files{$i}{filename} = $file;	
+ 			$files{$i}{filename} = $file;
 			$files{$i}{modtime} = $t;
 			$files{$i}{executed} = 1 if ($f0 & 0x2);
 		}
@@ -407,10 +434,10 @@ sub appWin8 {
 	my ($jmp, $t0, $t1, $sz, $name);
 	my $ct = 0;
 	my $ofs = unpack("V",substr($data,0,4));
-	
+
 	while($ofs < $len) {
 		my $tag = unpack("V",substr($data,$ofs,4));
-# 32-bit		
+# 32-bit
 		if ($tag == 0x73746f72) {
 			$jmp = unpack("V",substr($data,$ofs + 8,4));
 			($t0,$t1) = unpack("VV",substr($data,$ofs + 12,8));
@@ -433,11 +460,11 @@ sub appWin8 {
 			$files{$ct}{modtime} = ::getTime($t0,$t1);
 			$ct++;
 			$ofs += ($jmp + 12);
-		}		
+		}
 		else {
 # Unknown tag
-		}			
-	
+		}
+
 	}
 }
 
@@ -451,11 +478,11 @@ sub appWin10 {
 	my ($tag, $sz, $t0, $t1, $name, $name_len);
 	my $ct = 0;
 	my $ofs = 0x30;
-	
+
 	while ($ofs < $len) {
 		$tag = substr($data,$ofs,4);
 		if ($tag eq "10ts") {
-			
+
 			$sz = unpack("V",substr($data,$ofs + 0x08,4));
 			$name_len   = unpack("v",substr($data,$ofs + 0x0c,2));
 			my $name      = substr($data,$ofs + 0x0e,$name_len);
@@ -478,10 +505,10 @@ sub alertCheckPath {
 	$path = lc($path);
 	my @alerts = ("recycle","globalroot","temp","system volume information","appdata",
 	              "application data");
-	
+
 	foreach my $a (@alerts) {
 		if (grep(/$a/,$path)) {
-			::alertMsg("ALERT: appcompatcache: ".$a." found in path: ".$path);              
+			::alertMsg("ALERT: appcompatcache: ".$a." found in path: ".$path);
 		}
 	}
 }
@@ -509,7 +536,7 @@ sub alertCheckADS {
 sub probe {
 	my $data = shift;
 	my @d = printData($data);
-	
+
 	foreach (0..(scalar(@d) - 1)) {
 		print $d[$_]."\n";
 	}
@@ -524,16 +551,16 @@ sub probe {
 sub printData {
 	my $data = shift;
 	my $len = length($data);
-	
+
 	my @display = ();
-	
+
 	my $loop = $len/16;
 	$loop++ if ($len%16);
-	
+
 	foreach my $cnt (0..($loop - 1)) {
 # How much is left?
 		my $left = $len - ($cnt * 16);
-		
+
 		my $n;
 		($left < 16) ? ($n = $left) : ($n = 16);
 
@@ -571,20 +598,20 @@ sub processKey {
 				my ($session,$count,$val1,$val2) = unpack("V*",$data);
 			 	if ($val2 != 0) {
 					my $time_value = ::getTime($val1,$val2);
-					if ($value_name =~ m/^$hrzr/) { 
+					if ($value_name =~ m/^$hrzr/) {
 						$value_name =~ tr/N-ZA-Mn-za-m/A-Za-z/;
 					}
 					$count -= 5 if ($count > 5);
 					push(@{$ua{$time_value}},$value_name." (".$count.")");
 				}
 			}
-# Windows 7				
-			elsif (length($data) == 72) { 
+# Windows 7
+			elsif (length($data) == 72) {
 				$value_name =~ tr/N-ZA-Mn-za-m/A-Za-z/;
 				my $count = unpack("V",substr($data,4,4));
 				my @t = unpack("VV",substr($data,60,8));
 				next if ($t[0] == 0 && $t[1] == 0);
-				my $time_val = ::getTime($t[0],$t[1]);	
+				my $time_val = ::getTime($t[0],$t[1]);
 				push(@{$ua{$time_val}},$value_name." (".$count.")");
 			}
 			else {
@@ -602,7 +629,7 @@ sub parseLastVisitedMRU {
 	my %lvmru;
 	my @mrulist;
 	my @vals = $key->get_list_of_values();
-	
+
 	if (scalar(@vals) > 0) {
 # First, read in all of the values and the data
 		foreach my $v (@vals) {
@@ -617,16 +644,18 @@ sub parseLastVisitedMRU {
 				my ($file,$dir) = split(/\x00\x00/,$lvmru{$m},2);
 				$file =~ s/\x00//g;
 				$dir  =~ s/\x00//g;
-				$worksheet->write($row,2,$file);
-				$worksheet->write($row,3,$user);
-				$worksheet->write($row,5,"Last Visited MRU (Registry)");
-
-
+				#File Name
+				$worksheet->write($row,9,$file);
+				#File Path
+				$worksheet->write($row,10,$dir);
+				#MRU List EX
+				$worksheet->write($row,11,$m);
+				#User
+				$worksheet->write($row,12,$user);
 				$row++;
 			}
-		}				
+		}
 	}
-	return $row;
 }
 
 sub parseLastVisitedPidlMRU {
@@ -639,7 +668,7 @@ sub parseLastVisitedPidlMRU {
 	my @vals = $key->get_list_of_values();
 	my %mru;
 	my $count = 0;
-	
+
 	if (scalar(@vals) > 0) {
 # First, read in all of the values and the data
 		foreach my $v (@vals) {
@@ -651,17 +680,21 @@ sub parseLastVisitedPidlMRU {
 			foreach my $n (0..(scalar(@mrulist) - 2)) {
 				$mru{$count++} = $lvmru{$mrulist[$n]};
 			}
-			delete $mru{0xffffffff};	
+			delete $mru{0xffffffff};
 
 			foreach my $m (sort {$a <=> $b} keys %mru) {
 				my ($file,$shell) = split(/\x00\x00/,$mru{$m},2);
 				$file =~ s/\x00//g;
 				$shell =~ s/^\x00//;
 				my $str = parseShellItem($shell);
-				$worksheet->write($row,1,$str);
-				$worksheet->write($row,2,$file);
-				$worksheet->write($row,3,$user);
-				$worksheet->write($row,5,"Last Visited MRU (Registry)");
+				#File Name
+				$worksheet->write($row,9,$file);
+				#File Path
+				$worksheet->write($row,10,$str);
+				#MRU List EX
+				$worksheet->write($row,11,$m);
+				#User
+				$worksheet->write($row,12,$user);
 				$row++;
 			}
 		}
@@ -672,25 +705,25 @@ sub parseShellItem {
 	my $data = shift;
 	my $len = length($data);
 	my $str;
-	
+
 	my $tag = 1;
 	my $cnt = 0;
 	while ($tag) {
 		my %item = ();
 		my $sz = unpack("v",substr($data,$cnt,2));
 		$tag = 0 if (($sz == 0) || ($cnt + $sz > $len));
-		
+
 		my $dat = substr($data,$cnt,$sz);
 		my $type = unpack("C",substr($dat,2,1));
 #		::rptMsg(sprintf "  Size: ".$sz."  Type: 0x%x",$type);
-		
+
 		if ($type == 0x1F) {
-# System Folder 			
+# System Folder
  			%item = parseSystemFolderEntry($dat);
  			$str .= "\\".$item{name};
  		}
  		elsif ($type == 0x2F) {
-# Volume (Drive Letter) 			
+# Volume (Drive Letter)
  			%item = parseDriveEntry($dat);
  			$item{name} =~ s/\\$//;
  			$str .= "\\".$item{name};
@@ -700,7 +733,7 @@ sub parseShellItem {
  			$str .= "\\".$item{name};
  		}
  		elsif ($type == 0x00) {
- 			
+
  		}
  		elsif ($type == 0xc3 || $type == 0x41 || $type == 0x42 || $type == 0x46 || $type == 0x47) {
 # Network stuff
@@ -709,7 +742,7 @@ sub parseShellItem {
 				%item = parseNetworkEntry($dat);
 			}
 			else {
-				%item = parseNetworkEntry($dat); 
+				%item = parseNetworkEntry($dat);
 			}
 			$str .= "\\".$item{name};
  		}
@@ -717,7 +750,7 @@ sub parseShellItem {
  			$item{name} = sprintf "Unknown Type (0x%x)",$type;
  			$str .= "\\".$item{name};
 # 			probe($dat);
- 		}		
+ 		}
 		$cnt += $sz;
 	}
 	$str =~ s/^\\//;
@@ -726,7 +759,7 @@ sub parseShellItem {
 sub parseSystemFolderEntry {
 	my $data     = shift;
 	my %item = ();
-	
+
 	my %vals = (0x00 => "Explorer",
 	            0x42 => "Libraries",
 	            0x44 => "Users",
@@ -739,7 +772,7 @@ sub parseSystemFolderEntry {
 	            0x70 => "Control Panel",
 	            0x78 => "Recycle Bin",
 	            0x80 => "My Games");
-	
+
 	$item{type} = unpack("C",substr($data,2,1));
 	$item{id}   = unpack("C",substr($data,3,1));
 	if (exists $vals{$item{id}}) {
@@ -782,9 +815,9 @@ sub parseDriveEntry {
 #-----------------------------------------------------------
 sub parseNetworkEntry {
 	my $data = shift;
-	my %item = ();	
+	my %item = ();
 	$item{type} = unpack("C",substr($data,2,1));
-	
+
 	my @n = split(/\x00/,substr($data,4,length($data) - 4));
 	$item{name} = $n[0];
 	$item{name} =~ s/^\W//;
@@ -796,13 +829,13 @@ sub parseNetworkEntry {
 sub parseFolderEntry {
 	my $data     = shift;
 	my %item = ();
-	
+
 	$item{type} = unpack("C",substr($data,2,1));
-# Type 0x74 folders have a slightly different format	
-	
+# Type 0x74 folders have a slightly different format
+
 	my $ofs_mdate;
 	my $ofs_shortname;
-	
+
 	if ($item{type} == 0x74) {
 		$ofs_mdate = 0x12;
 	}
@@ -813,20 +846,20 @@ sub parseFolderEntry {
 		$ofs_mdate = 0x08;
 	}
 	else {}
-# some type 0x32 items will include a file size	
+# some type 0x32 items will include a file size
 	if ($item{type} == 0x32) {
 		my $size = unpack("V",substr($data,4,4));
 		if ($size != 0) {
 			$item{filesize} = $size;
 		}
 	}
-	
+
 	my @m = unpack("vv",substr($data,$ofs_mdate,4));
 	($item{mtime_str},$item{mtime}) = convertDOSDate($m[0],$m[1]);
-	
+
 # Need to read in short name; nul-term ASCII
 #	$item{shortname} = (split(/\x00/,substr($data,12,length($data) - 12),2))[0];
-	$ofs_shortname = $ofs_mdate + 6;	
+	$ofs_shortname = $ofs_mdate + 6;
 	my $tag = 1;
 	my $cnt = 0;
 	my $str = "";
@@ -843,7 +876,7 @@ sub parseFolderEntry {
 #	$str =~ s/\x00//g;
 	my $shortname = $str;
 	my $ofs = $ofs_shortname + $cnt + 1;
-# Read progressively, 1 byte at a time, looking for 0xbeef	
+# Read progressively, 1 byte at a time, looking for 0xbeef
 	$tag = 1;
 	$cnt = 0;
 	while ($tag) {
@@ -855,19 +888,19 @@ sub parseFolderEntry {
 		}
 	}
 	$item{extver} = unpack("v",substr($data,$ofs + $cnt - 4,2));
-	
+
 #	::rptMsg(sprintf "  BEEF Offset: 0x%x",$ofs + $cnt);
 #	::rptMsg("  Version: ".$item{extver});
-	
+
 	$ofs = $ofs + $cnt + 2;
-	
+
 	@m = unpack("vv",substr($data,$ofs,4));
 	($item{ctime_str},$item{ctime}) = convertDOSDate($m[0],$m[1]);
 	$ofs += 4;
 	@m = unpack("vv",substr($data,$ofs,4));
 	($item{atime_str},$item{atime}) = convertDOSDate($m[0],$m[1]);
 	$ofs += 4;
-	
+
 	my $jmp;
 	if ($item{extver} == 0x03) {
 		$jmp = 8;
@@ -879,12 +912,12 @@ sub parseFolderEntry {
 		$jmp = 26;
 	}
 	else {}
-	
+
 	$ofs += $jmp;
 #	::rptMsg(sprintf "  Offset: 0x%x",$ofs);
-	
+
 	$str = substr($data,$ofs,length($data) - $ofs);
-	
+
 	my $longname = (split(/\x00\x00/,$str,2))[0];
 	$longname =~ s/\x00//g;
 
@@ -905,7 +938,7 @@ sub parseFolderEntry {
 sub convertDOSDate {
 	my $date = shift;
 	my $time = shift;
-	
+
 	if ($date == 0x00 || $time == 0x00){
 		return (0,0);
 	}
@@ -939,7 +972,7 @@ sub convertDOSDate {
 sub probe {
 	my $data = shift;
 	my @d = printData($data);
-	
+
 	foreach (0..(scalar(@d) - 1)) {
 		print $d[$_]."\n";
 	}

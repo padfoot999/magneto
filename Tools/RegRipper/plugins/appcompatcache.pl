@@ -33,6 +33,9 @@
 #-----------------------------------------------------------
 package appcompatcache;
 use strict;
+use Excel::Writer::XLSX;
+use Time::Piece;
+use Regexp::Common qw(time);
 
 my %config = (hive          => "System",
 							hivemask      => 4,
@@ -62,7 +65,7 @@ sub pluginmain {
 	my $hive = shift;
 	::logMsg("Launching appcompatcache v.".$VERSION);
 	::rptMsg("appcompatcache v.".$VERSION); # banner
-  ::rptMsg("(".$config{hive}.") ".getShortDescr()."\n"); # banner 
+	::rptMsg("(".$config{hive}.") ".getShortDescr()."\n"); # banner 
 	my $reg = Parse::Win32Registry->new($hive);
 	my $root_key = $reg->get_root_key;
 # First thing to do is get the ControlSet00x marked current...this is
@@ -79,17 +82,21 @@ sub pluginmain {
 		if ($appcompat = $root_key->get_subkey($appcompat_path)) {
 			
 			my $app_data;
+			my $reg_key;
 			
 			eval {
 				$app_data = $appcompat->get_subkey("AppCompatibility")->get_value("AppCompatCache")->get_data();
+				$reg_key = "HKEY_LOCAL_MACHINE\\System\\".$appcompat_path."\\AppCompatibility";
 				::rptMsg($appcompat_path."\\AppCompatibility");
-			  ::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatibility")->get_timestamp())." Z");
+			  	::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatibility")->get_timestamp())." Z");
 			};
 			
 			eval {
 				$app_data = $appcompat->get_subkey("AppCompatCache")->get_value("AppCompatCache")->get_data();
+				$reg_key = "HKEY_LOCAL_MACHINE\\System\\".$appcompat_path."\\AppCompatCache";
+				::rptMsg($reg_key);
 				::rptMsg($appcompat_path."\\AppCompatCache");
-			  ::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatCache")->get_timestamp())." Z");
+			  	::rptMsg("LastWrite Time: ".gmtime($appcompat->get_subkey("AppCompatCache")->get_timestamp())." Z");
 			};
 				
 #			::rptMsg("Length of data: ".length($app_data));
@@ -128,9 +135,14 @@ sub pluginmain {
 				::rptMsg(sprintf "Unknown signature: 0x%x",$sig);
 			}
 # this is where we print out the files
+			my $workbook_name = $hive;
+			$workbook_name =~ s/(.*)SYSTEM[^\\]*$/$1Timeline-AppCompatCache.xlsx/g;
+			my $workbook = Excel::Writer::XLSX->new($workbook_name);
+			my $worksheet = $workbook->add_worksheet();
+			my $row = 0;
+
 			foreach my $f (keys %files) {
 #				::rptMsg($f);
-
 				my $modtime = $files{$f}{modtime};
 				if ($modtime == 0) {
 					$modtime = "";
@@ -144,6 +156,61 @@ sub pluginmain {
 				$str .= "  ".$files{$f}{size}." bytes" if (exists $files{$f}{size});
 				$str .= "  Executed" if (exists $files{$f}{executed});
 				::rptMsg($str);
+
+				# modification: yes/no
+				$modtime = $files{$f}{modtime};
+				::rptMsg($modtime);
+				$worksheet->write($row, 2, "REG");
+				if ($modtime == 0) {
+					$worksheet->write($row, 0, "-");
+					$worksheet->write($row, 1, "-");
+					$worksheet->write($row, 3, "UNKNOWN");
+				}
+				else {
+					$modtime = gmtime($modtime);
+					my $modtime_parsed;
+					if ($modtime !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+						my @date = $modtime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+			   			$modtime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+			   		} else {
+			   			my @parse = $modtime =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+			   			$modtime = $parse[0].$parse[1];
+			   			$modtime_parsed = Time::Piece->strptime($modtime, '%a %b  %d %H:%M:%S %Y');
+			   		}
+					$worksheet->write($row, 0, $modtime_parsed->strftime("%Y-%m-%d"));
+					$worksheet->write($row, 1, $modtime_parsed->strftime("%H:%M:%S"));
+					$worksheet->write($row, 3, "Content Modification Time");
+				}
+				$worksheet->write($row, 4, $reg_key);
+				my $description = "PATH:".$files{$f}{filename};
+				$description .= " SIZE:".$files{$f}{size}." bytes" if (exists $files{$f}{size});
+				$description .= " EXECUTED" if (exists $files{$f}{executed});
+				$worksheet->write($row, 5, $description);
+
+				# update?
+				if (exists $files{$f}{updtime}) {
+					$row++;
+					my $updtime = $files{$f}{updtime};
+					my $updtime_parsed;
+					if ($updtime !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+						my @date = $updtime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+			   			$updtime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+			   		} else {
+			   			my @parse = $updtime =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+			   			$updtime = $parse[0].$parse[1];
+			   			$updtime_parsed = Time::Piece->strptime($updtime, '%a %b  %d %H:%M:%S %Y');
+			   		}
+					$worksheet->write($row, 0, $updtime_parsed->strftime("%Y-%m-%d"));
+					$worksheet->write($row, 1, $updtime_parsed->strftime("%H:%M:%S"));
+					$worksheet->write($row, 2, "REG");
+					$worksheet->write($row, 3, "Content Execution Time");
+					$worksheet->write($row, 4, $reg_key);
+					my $description = "PATH:".$files{$f}{filename};
+					$description .= " SIZE:".$files{$f}{size}." bytes" if (exists $files{$f}{size});
+					$description .= " EXECUTED" if (exists $files{$f}{executed});
+					$worksheet->write($row, 5, $description);
+				}
+				$row++;
 			}
 		}
 		else {
