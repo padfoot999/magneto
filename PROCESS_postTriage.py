@@ -154,20 +154,20 @@ def postTriage(directory,projectname):
 				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'security'], stdout=outfile)
 			os.chdir(currentWorkingDirectory)
 
-		if "HKCU_" in rawFile:
-			currentWorkingDirectory = os.getcwd()
-			outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\NTUSER_Ripped_Report.txt"
-			outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
-			if not os.path.exists(outputdir):
-				try:
-					os.makedirs(outputdir)
-				except:
-					logging.error("Unable to create results folder")
-					sys.exit()
-			os.chdir('.\Tools\RegRipper')
-			with open(outputFile, "a") as outfile:
-				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'ntuser'], stdout=outfile)
-			os.chdir(currentWorkingDirectory)
+		# if "HKCU_" in rawFile:
+		# 	currentWorkingDirectory = os.getcwd()
+		# 	outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\NTUSER_Ripped_Report.txt"
+		# 	outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
+		# 	if not os.path.exists(outputdir):
+		# 		try:
+		# 			os.makedirs(outputdir)
+		# 		except:
+		# 			logging.error("Unable to create results folder")
+		# 			sys.exit()
+		# 	os.chdir('.\Tools\RegRipper')
+		# 	with open(outputFile, "a") as outfile:
+		# 		subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'ntuser'], stdout=outfile)
+		# 	os.chdir(currentWorkingDirectory)
 		
 		if "_1.dat" in rawFile:
 			currentWorkingDirectory = os.getcwd()
