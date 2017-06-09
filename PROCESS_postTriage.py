@@ -198,6 +198,13 @@ def postTriage(directory,projectname):
 			outputfile = currentWorkingDirectory + "\Results\\" + projectname + "\\" + imgname + "-MFT-" + timestamp + ".csv"
 			subprocess.call(['python','.\Tools\\analyzeMFT-master\\analyzeMFT.py', '-f', rawFile, '-c', outputfile])
 
+		if "RecentFileCache.bcf" in rawFile:
+			parentDirectory = os.path.abspath(os.path.join(rawFile, os.pardir))
+			outputfile = parentDirectory + "\\RecentFileCache-Output.csv"
+			with open(outputfile, "a") as outfile:
+				subprocess.call(['python','.\Resources\\rfcparse.py', '-f', rawFile], stdout=outfile)
+
+
 	users = []
 	if os.path.isdir(directory + "\\Evidence\\Jump Lists"):
 		for root, dirs, files in os.walk(directory + "\\Evidence\\Jump Lists"):
