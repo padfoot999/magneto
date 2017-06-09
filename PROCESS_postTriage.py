@@ -202,7 +202,7 @@ def postTriage(directory,projectname):
 			parentDirectory = os.path.abspath(os.path.join(rawFile, os.pardir))
 			outputfile = parentDirectory + "\\RecentFileCache-Output.csv"
 			with open(outputfile, "a") as outfile:
-				subprocess.call(['python','.\Resources\\rfcparse.py', '-f', rawFile], stdout=outfile)
+				subprocess.call(['python','.\Tools\\rfcparse.py', '-f', rawFile], stdout=outfile)
 
 
 	users = []
