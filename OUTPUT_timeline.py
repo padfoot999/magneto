@@ -31,14 +31,9 @@ logger = logging.getLogger('root')
 #INPUT: database connection handle, directory to evidence files
 #OUTPUT: NONE
 #DESCRIPTION:
-def outputTimeline(directory, projectname, results):
+def outputTimeline(directory, projectname, results, split):
 	imgname = os.path.split(directory)[1]
 	timestamp = str(datetime.datetime.strftime(datetime.datetime.today(),'%Y%m%d%H%M%S'))
-	workbook = load_workbook(filename= 'MAGNETO_Timeline_template.xlsx')
-	writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Timeline-' + timestamp + '.xlsx', engine='openpyxl')
-	writer.book = workbook
-	writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
-	writer.save()
 
 	unprocessedlist = []
 	jmpRowCount = 2
@@ -60,17 +55,17 @@ def outputTimeline(directory, projectname, results):
 			if "-MFT-" in pathFile and imgname in pathFile:
 				unprocessedlist.append(os.path.join(root,filename))
 
-	timeline_column = ['Date','Time','Source','Type','Short','Description']
+	timeline_column = ['Date','Time','MACB','Source','Source_Type','Type','Short','Description']
 	timeline = pd.DataFrame()
 	timeline_merged = pd.DataFrame()
-	timeline_merged_column = ['Date','Time','MACB','Source','Type','Short','Description']
+	timeline_merged_column = ['Date','Time','MACB','Source','Source_Type','Type','Short','Description']
 	for rawFile in unprocessedlist:
 		if "Timeline-" in rawFile:
+			print timeline_column
 			timeline = pd.read_excel(rawFile, sheetname=0, header=None, names=timeline_column)
 			timeline = clean(timeline, list(timeline))
-			timeline["MACB"] = ""
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
-		if "MFT" in rawFile:
+		if "-MFT-" in rawFile:
 			mft_column = ['Date', 'Time', 'Timezone', 'MACB', 'Source', 'Type', '1' , 'user', 'host', 'Description', 'Desc', 'Version', 'Filename', 'Inode', 'Notes', "Format", "Extra"]
 			timeline = pd.read_csv(rawFile, sep='|', header=None, names=mft_column)
 			del timeline['Timezone']
@@ -85,8 +80,37 @@ def outputTimeline(directory, projectname, results):
 			del timeline['Format']
 			del timeline['Extra']
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
-	timeline_merged.to_excel(writer,sheet_name="Timeline",index=False,header=False,columns=timeline_merged_column,startrow=1)
-	writer.save()
+
+	timeline_merged['Date'].replace('-', np.nan, inplace=True)
+	timeline_merged['Time'].replace('-', np.nan, inplace=True)
+	timeline_merged['Time'] = timeline_merged['Time'].str.replace(r'\.\d*', '')
+	timeline_merged.dropna(subset=['Date'], inplace=True)
+	timeline_merged.dropna(subset=['Time'], inplace=True)
+
+	timeline_merged['DateTime_merged'] = timeline_merged['Date'] + " " + timeline_merged['Time']
+	timeline_merged['DateTime_merged'] = pd.to_datetime(timeline_merged['DateTime_merged'], format="%Y-%m-%d %H:%M:%S")
+
+	timeline_merged.sort_values('DateTime_merged', ascending=True, inplace=True)
+	if split:
+		splitdata = np.array_split(timeline_merged, split)
+		count = 1
+		for data in splitdata:
+			workbook = load_workbook(filename= 'MAGNETO_Timeline_template.xlsx')
+			writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Timeline-' + str(count) + '-' + timestamp + '.xlsx', engine='openpyxl')
+			writer.book = workbook
+			writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
+			writer.save()
+			data.to_excel(writer,sheet_name="Timeline",index=False,header=False,columns=timeline_merged_column,startrow=1)
+			writer.save()
+			count += 1
+	else:
+		workbook = load_workbook(filename= 'MAGNETO_Timeline_template.xlsx')
+		writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Timeline-' + timestamp + '.xlsx', engine='openpyxl')
+		writer.book = workbook
+		writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
+		writer.save()
+		timeline_merged.to_excel(writer,sheet_name="Timeline",index=False,header=False,columns=timeline_merged_column,startrow=1)
+		writer.save()
 
 def clean(df, columns):
 	for col in df.select_dtypes([np.object]).columns[1:]:
@@ -108,18 +132,24 @@ def main():
 	parser.add_argument('-d', dest='directory', required=True, type=str, help="Directory containing evidence files")
 	parser.add_argument('-r', dest='results', required=True, type=str, help="Directory containing results that was output by Post Triage Python Script")
 	parser.add_argument('-p', dest='projectname', type=str, required=True, help="Codename of the project that the evidence is part of")
+	parser.add_argument('-s', dest='split', type=int, required=False, help="Split timeline to number of excel workbooks specified by input")
 	args = parser.parse_args()
 
 	searchDirectory = args.directory
 	projectname = args.projectname
 	imagelist=[]
 
+	if args.split:
+		split = args.split
+	else:
+		split = 0
+
 	if "Incident" in searchDirectory:
 		pathParts = searchDirectory.split('\\')
 		for part in pathParts:
 			if "Incident" in part:
 				imagelist.append(part)
-				outputTimeline(searchDirectory,projectname,args.results)
+				outputTimeline(searchDirectory,projectname,args.results,split)
 
 	else:
 		for root, dirs, files in os.walk(searchDirectory):
@@ -128,7 +158,7 @@ def main():
 				if "Incident" in directory:
 						if directory not in imagelist:
 							imagelist.append(directory)
-							outputTimeline(str(os.path.join(root,directory)),projectname,args.results)
+							outputTimeline(str(os.path.join(root,directory)),projectname,args.results,split)
 
 if __name__ == '__main__':
 	main()
