@@ -66,8 +66,8 @@ sub pluginmain {
 	my $tag = 0;
 	my @versions = ("12\.0", "14\.0", "15\.0");
 	my %paths = ("12\.0" => "Microsoft Office 2007",
-					"14\.0" => "Microsoft Office 2010",
-                 "15\.0" => "Microsoft Office 365/2013");
+				"14\.0" => "Microsoft Office 2010",
+             	"15\.0" => "Microsoft Office 365/2013");
 	foreach my $ver (@versions) {
 		my $key_path = "Software\\Microsoft\\Office\\".$ver."\\Common\\Open Find";
 		if (defined($root_key->get_subkey($key_path))) {
@@ -116,19 +116,21 @@ sub pluginmain {
 							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
 				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
 				   		} else {
-				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
 				   			$lastUsedDate = $parse[0].$parse[1];
 				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
 				   		}
 						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
 						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
-						$worksheet->write($row, 2, "REG");
-						$worksheet->write($row, 3, "Content Modification Time");
+						$worksheet->write($row, 2, ".A..");
+						$worksheet->write($row, 3, "REG");
+						$worksheet->write($row, 4, "Registry Key: Office Documents MRU");
+						$worksheet->write($row, 5, "File Access Time");
 						my $reg_key = $currentuser."\\".$key_path."\\".$word;
-						$worksheet->write($row, 4, $reg_key);
 						my $description = "FILE:".$data;
 						$description =~ s/$lastUsedDate_parsed//g;
-						$worksheet->write($row, 5, $description);
+						$worksheet->write($row, 6, $description);
+						$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 						$row++;
 					}
 				}
@@ -167,19 +169,21 @@ sub pluginmain {
 							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
 				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
 				   		} else {
-				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
 				   			$lastUsedDate = $parse[0].$parse[1];
 				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
 				   		}
 						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
 						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
-						$worksheet->write($row, 2, "REG");
-						$worksheet->write($row, 3, "Content Modification Time");
-						my $reg_key = $currentuser."\\".$key_path."\\".$excel;
-						$worksheet->write($row, 4, $reg_key);
+						$worksheet->write($row, 2, ".A..");
+						$worksheet->write($row, 3, "REG");
+						$worksheet->write($row, 4, "Registry Key: Office Documents MRU");
+						$worksheet->write($row, 5, "File Access Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$word;
 						my $description = "FILE:".$data;
 						$description =~ s/$lastUsedDate_parsed//g;
-						$worksheet->write($row, 5, $description);
+						$worksheet->write($row, 6, $description);
+						$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 						$row++;
 					}
 				}
@@ -218,19 +222,22 @@ sub pluginmain {
 							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
 				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
 				   		} else {
-				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
 				   			$lastUsedDate = $parse[0].$parse[1];
 				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
 				   		}
 						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
 						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
-						$worksheet->write($row, 2, "REG");
-						$worksheet->write($row, 3, "Content Modification Time");
-						my $reg_key = $currentuser."\\".$key_path."\\".$access;
-						$worksheet->write($row, 4, $reg_key);
+						$worksheet->write($row, 2, ".A..");
+						$worksheet->write($row, 3, "REG");
+						$worksheet->write($row, 4, "Registry Key: Office Documents MRU");
+						$worksheet->write($row, 5, "File Access Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$word;
 						my $description = "FILE:".$data;
 						$description =~ s/$lastUsedDate_parsed//g;
-						$worksheet->write($row, 5, $description);
+						$worksheet->write($row, 6, $description);
+						$worksheet->write($row, 7, "[".$reg_key."] ".$description);
+						$row++;
 						$row++;
 					}
 				}
@@ -269,19 +276,21 @@ sub pluginmain {
 							@date = $lastUsedDate =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
 				   			$lastUsedDate_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
 				   		} else {
-				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+				   			my @parse = $lastUsedDate =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
 				   			$lastUsedDate = $parse[0].$parse[1];
 				   			$lastUsedDate_parsed = Time::Piece->strptime($lastUsedDate, '%a %b  %d %H:%M:%S %Y');
 				   		}
 						$worksheet->write($row, 0, $lastUsedDate_parsed->strftime("%Y-%m-%d"));
 						$worksheet->write($row, 1, $lastUsedDate_parsed->strftime("%H:%M:%S"));
-						$worksheet->write($row, 2, "REG");
-						$worksheet->write($row, 3, "Content Modification Time");
-						my $reg_key = $currentuser."\\".$key_path."\\".$ppt;
-						$worksheet->write($row, 4, $reg_key);
+						$worksheet->write($row, 2, ".A..");
+						$worksheet->write($row, 3, "REG");
+						$worksheet->write($row, 4, "Registry Key: Office Documents MRU");
+						$worksheet->write($row, 5, "File Access Time");
+						my $reg_key = $currentuser."\\".$key_path."\\".$word;
 						my $description = "FILE:".$data;
 						$description =~ s/$lastUsedDate_parsed//g;
-						$worksheet->write($row, 5, $description);
+						$worksheet->write($row, 6, $description);
+						$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 						$row++;
 					}
 				}

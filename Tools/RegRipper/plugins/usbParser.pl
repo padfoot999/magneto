@@ -32,7 +32,8 @@ sub printDetails {
 	my $worksheet = shift;
 	my $row = shift;
 	my $datetime = shift;
-	my $event_type = shift;
+	my $source_type = shift;
+	my $type = shift;
 	my $reg_key = shift;
 	my $usb = shift;
 	my $datetime_parsed;
@@ -46,22 +47,20 @@ sub printDetails {
 		$datetime = $parse[0].$parse[1];
 		$datetime_parsed = Time::Piece->strptime($datetime, '%a %b  %d %H:%M:%S %Y');
 	}
-	::rptMsg($datetime);
-	::rptMsg($datetime_parsed);
 	$worksheet->write($row, 0, $datetime_parsed->strftime("%Y-%m-%d"));
-	::rptMsg($datetime_parsed->strftime("%Y-%m-%d"));
 	$worksheet->write($row, 1, $datetime_parsed->strftime("%H:%M:%S"));
-	::rptMsg($datetime_parsed->strftime("%H:%M:%S"));
-	$worksheet->write($row, 2, "REG");
-	$worksheet->write($row, 3, $event_type);
-	$worksheet->write($row, 4, $reg_key);
+	$worksheet->write($row, 2, "M...");
+	$worksheet->write($row, 3, "REG");
+	$worksheet->write($row, 4, $source_type);
+	$worksheet->write($row, 5, $type);
 	my $description;
 	$description .= "DEVICE:".$usb->{'DeviceClassID'} if $usb->{'DeviceClassID'} ne "";
 	$description .= " SERIAL NUMBER:".$usb->{'SerialNumber'} if $usb->{'SerialNumber'} ne "";
 	$description .= " FRIENDLY NAME:".$usb->{'FriendlyName'} if $usb->{'FriendlyName'} ne "";
 	$description .= " VOLUME GUID:".$usb->{'VolumeGUID'} if $usb->{'VolumeGUID'} ne "";
 	$description .= " DRIVE LETTER:".$usb->{'DriveLetter'} if $usb->{'DriveLetter'} ne "";
-	$worksheet->write($row, 5, $description);
+	$worksheet->write($row, 6, $description);
+	$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 	$row++;
 	return $row;
 }
@@ -325,29 +324,34 @@ sub pluginmain {
 	my $row2 = 0;
 	for my $usb (@usbDictionary) {
 		if ($usb->{'RebootConnected'} ne "") {
-			my $event_type = "USB First Connected Since Reboot";
+			my $source_type = "Registry: DeviceClasses";
+			my $type = "USB First Connected Since Reboot";
 			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Control\\DeviceClasses\\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'RebootConnected'}, $event_type, $reg_key, $usb);
+			$row2 = printDetails($worksheet2, $row2, $usb->{'RebootConnected'}, $source_type, $type, $reg_key, $usb);
 		}
 		if ($usb->{'FirstInstallDate'} ne "") {
-			my $event_type = "USB First Install Date";
+			my $source_type = "Registry: USBStor";
+			my $type = "USB First Install Date";
 			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Enum\\USBStor\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0064";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'FirstInstallDate'}, $event_type, $reg_key, $usb);
+			$row2 = printDetails($worksheet2, $row2, $usb->{'FirstInstallDate'}, $source_type, $type, $reg_key, $usb);
 		}
 		if ($usb->{'LastConnectedDate'} ne "") {
-			my $event_type = "USB Last Connected Date";
+			my $source_type = "Registry: USBStor";
+			my $type = "USB Last Connected Date";
 			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Enum\\USBStor\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0065";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'LastConnectedDate'}, $event_type, $reg_key, $usb);
+			$row2 = printDetails($worksheet2, $row2, $usb->{'LastConnectedDate'}, $source_type, $type, $reg_key, $usb);
 		}
 		if ($usb->{'LastRemovedDate'} ne "") {
-			my $event_type = "USB Last Removed Date";
+			my $source_type = "Registry: USBStor";
+			my $type = "USB Last Removed Date";
 			my $reg_key = "HKEY_LOCAL_MACHINE\\System\\".$ccs."\\Enum\\USBStor\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066";
-			$row2 = printDetails($worksheet2, $row2, $usb->{'LastRemovedDate'}, $event_type, $reg_key, $usb);
+			$row2 = printDetails($worksheet2, $row2, $usb->{'LastRemovedDate'}, $source_type, $type, $reg_key, $usb);
 		}
 		if ($usb->{'AssociatedUser'} ne "") {
 			my @users = split(/,/, $usb->{'AssociatedUser'});
 			for my $user (@users) {
-				my $event_type = "USB Associated User";
+				my $source_type = "Registry: MountPoints2";
+				my $type = "USB Associated User";
 				my @owner = $user =~ m/(.*) on/;
 				my $reg_key = "HKEY_USERS\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2";
 				my @date = $user =~ m/ on (.*)/;
@@ -364,9 +368,10 @@ sub pluginmain {
 				}
 				$worksheet2->write($row2, 0, $datetime_parsed->strftime("%Y-%m-%d"));
 				$worksheet2->write($row2, 1, $datetime_parsed->strftime("%H:%M:%S"));
-				$worksheet2->write($row2, 2, "REG");
-				$worksheet2->write($row2, 3, $event_type);
-				$worksheet2->write($row2, 4, $reg_key);
+				$worksheet2->write($row2, 2, "M...");
+				$worksheet2->write($row2, 3, "REG");
+				$worksheet2->write($row2, 4, $source_type);
+				$worksheet2->write($row2, 5, $type);
 				my $description;
 				$description .= "USER:".$owner[0];
 				$description .= " DEVICE:".$usb->{'DeviceClassID'} if $usb->{'DeviceClassID'} ne "";
@@ -374,7 +379,8 @@ sub pluginmain {
 				$description .= " FRIENDLY NAME:".$usb->{'FriendlyName'} if $usb->{'FriendlyName'} ne "";
 				$description .= " VOLUME GUID:".$usb->{'VolumeGUID'} if $usb->{'VolumeGUID'} ne "";
 				$description .= " DRIVE LETTER:".$usb->{'DriveLetter'} if $usb->{'DriveLetter'} ne "";
-				$worksheet2->write($row2, 5, $description);
+				$worksheet2->write($row2, 6, $description);
+				$worksheet2->write($row2, 7, "[".$reg_key."] ".$description);
 				$row2++;
 			}
 		}

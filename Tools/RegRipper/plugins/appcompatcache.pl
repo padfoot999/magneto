@@ -160,11 +160,13 @@ sub pluginmain {
 				# modification: yes/no
 				$modtime = $files{$f}{modtime};
 				::rptMsg($modtime);
-				$worksheet->write($row, 2, "REG");
+				$worksheet->write($row, 3, "REG");
+				$worksheet->write($row, 4, "Registry Key: AppCompatCache");
 				if ($modtime == 0) {
 					$worksheet->write($row, 0, "-");
 					$worksheet->write($row, 1, "-");
-					$worksheet->write($row, 3, "UNKNOWN");
+					$worksheet->write($row, 2, "....");
+					$worksheet->write($row, 5, "UNKNOWN");
 				}
 				else {
 					$modtime = gmtime($modtime);
@@ -173,19 +175,22 @@ sub pluginmain {
 						my @date = $modtime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
 			   			$modtime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
 			   		} else {
-			   			my @parse = $modtime =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+			   			my @parse = $modtime =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
 			   			$modtime = $parse[0].$parse[1];
 			   			$modtime_parsed = Time::Piece->strptime($modtime, '%a %b  %d %H:%M:%S %Y');
 			   		}
 					$worksheet->write($row, 0, $modtime_parsed->strftime("%Y-%m-%d"));
 					$worksheet->write($row, 1, $modtime_parsed->strftime("%H:%M:%S"));
-					$worksheet->write($row, 3, "Content Modification Time");
+					$worksheet->write($row, 2, "M...");
+					$worksheet->write($row, 5, "File Modification Time");
 				}
-				$worksheet->write($row, 4, $reg_key);
+				
 				my $description = "PATH:".$files{$f}{filename};
+				#short
+				$worksheet->write($row, 6, $description);
 				$description .= " SIZE:".$files{$f}{size}." bytes" if (exists $files{$f}{size});
 				$description .= " EXECUTED" if (exists $files{$f}{executed});
-				$worksheet->write($row, 5, $description);
+				$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 
 				# update?
 				if (exists $files{$f}{updtime}) {
@@ -202,13 +207,15 @@ sub pluginmain {
 			   		}
 					$worksheet->write($row, 0, $updtime_parsed->strftime("%Y-%m-%d"));
 					$worksheet->write($row, 1, $updtime_parsed->strftime("%H:%M:%S"));
-					$worksheet->write($row, 2, "REG");
-					$worksheet->write($row, 3, "Content Execution Time");
-					$worksheet->write($row, 4, $reg_key);
+					$worksheet->write($row, 2, ".A..");
+					$worksheet->write($row, 3, "REG");
+					$worksheet->write($row, 4, "Registry Key: AppCompatCache");
+					$worksheet->write($row, 5, "File Execution Time");
 					my $description = "PATH:".$files{$f}{filename};
+					$worksheet->write($row, 6, $description);
 					$description .= " SIZE:".$files{$f}{size}." bytes" if (exists $files{$f}{size});
 					$description .= " EXECUTED" if (exists $files{$f}{executed});
-					$worksheet->write($row, 5, $description);
+					$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 				}
 				$row++;
 			}

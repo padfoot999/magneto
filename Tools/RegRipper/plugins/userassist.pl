@@ -249,21 +249,23 @@ sub processKey {
 					my @date = $runtime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
 		   			$runtime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
 		   		} else {
-		   			my @parse = $runtime =~ m/(Mon|Tue|Wed|Thu|Fri)(.*)/;
+		   			my @parse = $runtime =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
 		   			$runtime = $parse[0].$parse[1];
 		   			$runtime_parsed = Time::Piece->strptime($runtime, '%a %b  %d %H:%M:%S %Y');
 		   		}
 		   		$worksheet->write($row, 0, $runtime_parsed->strftime("%Y-%m-%d"));
 				$worksheet->write($row, 1, $runtime_parsed->strftime("%H:%M:%S"));
-				$worksheet->write($row, 2, "REG");
-				$worksheet->write($row, 3, "Time of Launch");
-				$worksheet->write($row, 4, $reg_key);
+				$worksheet->write($row, 2, ".A..");
+				$worksheet->write($row, 3, "REG");
+				$worksheet->write($row, 4, "Registry Key: UserAssist");
+				$worksheet->write($row, 5, "Last Run Time");
 				if ($value_name =~ m/{\w*-\w*-\w*-\w*-\w*}/) {
 					$value_name =~ s/({\w*-\w*-\w*-\w*-\w*})/$folder_guid{$1}/g;
 				}
 				my $description = "PATH:".$value_name;
 				$description .= " [Count: ".$count."]";
-				$worksheet->write($row, 5, $description);
+				$worksheet->write($row, 6, $description);
+				$worksheet->write($row, 7, "[".$reg_key."] ".$description);
 				$row++;
 			}
 			else {

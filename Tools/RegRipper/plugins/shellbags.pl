@@ -363,16 +363,25 @@ sub traverse {
  		::rptMsg($str);
         if ($item{mrutime_str}) {
             my $mrutime = $item{mrutime_str};
-            my @date = $mrutime =~ $RE{time}{strftime}{-pat => '%Y-%m-%d %H:%M:%S'}{-keep};
-            my $mrutime_parsed = Time::Piece->strptime($date[0], '%Y-%m-%d %H:%M:%S');
+            my $mrutime_parsed;
+            if ($mrutime !~ m/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {2,}/) {
+                my @date = $mrutime =~ $RE{time}{strftime}{-pat => '%a %b %d %H:%M:%S %Y'}{-keep};
+                $mrutime_parsed = Time::Piece->strptime($date[0], '%a %b %d %H:%M:%S %Y');
+            } else {
+                my @parse = $mrutime =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(.*)/;
+                $mrutime = $parse[0].$parse[1];
+                $mrutime_parsed = Time::Piece->strptime($mrutime, '%a %b  %d %H:%M:%S %Y');
+            }
             $worksheet->write($row, 0, $mrutime_parsed->strftime("%Y-%m-%d"));
             $worksheet->write($row, 1, $mrutime_parsed->strftime("%H:%M:%S"));
-            $worksheet->write($row, 2, "REG");
-            $worksheet->write($row, 3, "Folder Accessed");
+            $worksheet->write($row, 2, ".A..");
+            $worksheet->write($row, 3, "REG");
+            $worksheet->write($row, 4, "Registry Key: ShellBags");
+            $worksheet->write($row, 5, "Folder Access Time");
             my $updated_reg_key = $reg_key."\\".$item{path};
-            $worksheet->write($row, 4, $updated_reg_key);
             my $description = "PATH:".$resource;
-            $worksheet->write($row, 5, $description);
+            $worksheet->write($row, 6, $description);
+            $worksheet->write($row, 7, "[".$updated_reg_key."] ".$description);
             $row++;
         }
         
