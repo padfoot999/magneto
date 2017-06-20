@@ -105,5 +105,5 @@ python OUTPUT_summary.py -d "E:\\" -r "F:\\magneto\\results\\PROJECT" -p PROJECT
 * Output timeline
 Timeline currently supports UserAssist, USB, AppCompatCache, OfficeDocsMRU and ShellBags
 ```
-python OUTPUT_timeline.py -d <Path to Incident folder>  -p <Project Name>
+python OUTPUT_timeline.py -d <Path to Incident folder>  -p <Project Name> -s <Number of workbooks to split>
 ```
