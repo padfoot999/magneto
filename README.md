@@ -28,6 +28,8 @@ http://strawberryperl.com/
 10. Open command prompt and type: 
 cpan
 install Parse::Win32Registry
+install Regexp::Common
+install Regexp::Common::time
 
 ### Triage Post-Processing
 
