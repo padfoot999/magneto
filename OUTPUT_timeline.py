@@ -26,6 +26,18 @@ from config import CONFIG
 import logging
 logger = logging.getLogger('root')
 
+def descconcat(row):
+	val = "[" + row['ContainerLog'] + "] Provider Name:" + row['ProviderName'] + " Message:" + str(row['Message']).replace("\n", ", ")
+	return val
+
+def shortconcat(row):
+	try:
+		event_desc = re.match("(.*)\n", row['Message']).group(1)
+	except:
+		event_desc = str(row['Message'])
+	print event_desc
+	val = "Event ID:" + str(row['Id']) + " " + event_desc
+	return val
 
 #NAME:process
 #INPUT: database connection handle, directory to evidence files
@@ -54,6 +66,8 @@ def outputTimeline(directory, projectname, results, split):
 			pathFile = str(os.path.join(root,filename))
 			if "-MFT-" in pathFile and imgname in pathFile:
 				unprocessedlist.append(os.path.join(root,filename))
+			if "AllLogs.csv" in pathFile and imgname in pathFile:
+				unprocessedlist.append(os.path.join(root,filename))
 
 	timeline_column = ['Date','Time','MACB','Source','Source_Type','Type','Short','Description']
 	timeline = pd.DataFrame()
@@ -61,7 +75,6 @@ def outputTimeline(directory, projectname, results, split):
 	timeline_merged_column = ['Date','Time','MACB','Source','Source_Type','Type','Short','Description']
 	for rawFile in unprocessedlist:
 		if "Timeline-" in rawFile:
-			print timeline_column
 			timeline = pd.read_excel(rawFile, sheetname=0, header=None, names=timeline_column)
 			timeline = clean(timeline, list(timeline))
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
@@ -80,10 +93,23 @@ def outputTimeline(directory, projectname, results, split):
 			del timeline['Format']
 			del timeline['Extra']
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
+			timeline_merged['Date'].replace('-', np.nan, inplace=True)
+			timeline_merged['Time'].replace('-', np.nan, inplace=True)
+			timeline_merged['Time'] = timeline_merged['Time'].str.replace(r'\.\d*', '')
+		if "AllLogs.csv" in rawFile:
+			logs = pd.read_csv(rawFile)
+			logs_final = pd.DataFrame()
+			logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.date.astype(str)
+			logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.time.astype(str)
+			logs_final['MACB'] = "..C."
+			logs_final['Source'] = "EVT"
+			logs_final['Source_Type'] = "WinEvt"
+			logs_final['Type'] = "Event Creation Time"
+			logs_final['Short'] = logs.apply(shortconcat, axis=1)
+			logs_final['Description'] = logs.apply(descconcat, axis=1)
+			timeline_merged = timeline_merged.append(logs_final, ignore_index=True)
 
-	timeline_merged['Date'].replace('-', np.nan, inplace=True)
-	timeline_merged['Time'].replace('-', np.nan, inplace=True)
-	timeline_merged['Time'] = timeline_merged['Time'].str.replace(r'\.\d*', '')
+	print timeline_merged
 	timeline_merged.dropna(subset=['Date'], inplace=True)
 	timeline_merged.dropna(subset=['Time'], inplace=True)
 
@@ -91,6 +117,7 @@ def outputTimeline(directory, projectname, results, split):
 	timeline_merged['DateTime_merged'] = pd.to_datetime(timeline_merged['DateTime_merged'], format="%Y-%m-%d %H:%M:%S")
 
 	timeline_merged.sort_values('DateTime_merged', ascending=True, inplace=True)
+	
 	if split:
 		splitdata = np.array_split(timeline_merged, split)
 		count = 1
