@@ -74,11 +74,13 @@ def outputTimeline(directory, projectname, results, split):
 	timeline_merged = pd.DataFrame()
 	timeline_merged_column = ['Date','Time','MACB','Source','Source_Type','Type','Short','Description']
 	for rawFile in unprocessedlist:
-		if "Timeline-" in rawFile:
+		if "Timeline-" in rawFile and rawFile.endswith(".xlsx"):
+			print rawFile
 			timeline = pd.read_excel(rawFile, sheetname=0, header=None, names=timeline_column)
 			timeline = clean(timeline, list(timeline))
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
 		if "-MFT-" in rawFile:
+			print rawFile
 			mft_column = ['Date', 'Time', 'Timezone', 'MACB', 'Source', 'Type', '1' , 'user', 'host', 'Description', 'Desc', 'Version', 'Filename', 'Inode', 'Notes', "Format", "Extra"]
 			timeline = pd.read_csv(rawFile, sep='|', header=None, names=mft_column)
 			del timeline['Timezone']
@@ -92,21 +94,28 @@ def outputTimeline(directory, projectname, results, split):
 			del timeline['Notes']
 			del timeline['Format']
 			del timeline['Extra']
+			timeline = clean(timeline, list(timeline))
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
 			timeline_merged['Date'].replace('-', np.nan, inplace=True)
 			timeline_merged['Time'].replace('-', np.nan, inplace=True)
 			timeline_merged['Time'] = timeline_merged['Time'].str.replace(r'\.\d*', '')
 		if "AllLogs.csv" in rawFile:
+			print rawFile
 			logs = pd.read_csv(rawFile)
 			logs_final = pd.DataFrame()
-			logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.date.astype(str)
-			logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.time.astype(str)
+			try:
+				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.date.astype(str)
+				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.time.astype(str)
+			except:
+				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %H:%M:%S %p").dt.date.astype(str)
+				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %H:%M:%S %p").dt.time.astype(str)
 			logs_final['MACB'] = "..C."
 			logs_final['Source'] = "EVT"
 			logs_final['Source_Type'] = "WinEvt"
 			logs_final['Type'] = "Event Creation Time"
 			logs_final['Short'] = logs.apply(shortconcat, axis=1)
 			logs_final['Description'] = logs.apply(descconcat, axis=1)
+			logs_final = clean(logs_final, list(logs_final))
 			timeline_merged = timeline_merged.append(logs_final, ignore_index=True)
 
 	print timeline_merged

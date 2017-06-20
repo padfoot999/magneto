@@ -166,8 +166,8 @@ def outputSummary(directory, projectname, results):
 				jmplist.to_excel(writer,sheet_name="File or Folder Opening",startcol=4,index=False,header=False,startrow=openLastRow)
 				jmplist.to_excel(writer,sheet_name="File Execution",startcol=4,index=False,header=False,startrow=openLastRow)
 
-		pattern = re.compile(r'Recent LNKs\\[^\\]*\\[^\\]*\.csv')
-		if pattern.search(rawFile) and "Report" in rawFile:
+		pattern = re.compile(r'Recent LNKs\\[^\\]*\\[^\\]*\.csv$')
+		if pattern.search(rawFile):
 			currentrecent = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="K:O",header=1)
 			openLastRow = recentRowCount
 
