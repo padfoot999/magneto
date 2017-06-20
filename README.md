@@ -31,6 +31,15 @@ install Parse::Win32Registry
 
 ### Triage Post-Processing
 
+#### Proposed Workflow
+1 ) Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Dump Volatility output into the Evidence folder within each Incident folder.
+2 ) Process Event Logs using Windows Powershell (WINTEL.ps1) file.
+3 ) Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
+4 ) Run submit.py file
+5 ) Run Baseline, ProcessDiff, ProcessNetworkConnections, AutoRunMerged, CVE Checker Python scripts
+6 ) Run Summary file
+
+
 #### MEMORY PROCESSING
 Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Dump Volatility output into the Evidence folder within each Incident folder.
 
