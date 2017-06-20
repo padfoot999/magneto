@@ -167,7 +167,7 @@ def outputSummary(directory, projectname, results):
 				jmplist.to_excel(writer,sheet_name="File Execution",startcol=4,index=False,header=False,startrow=openLastRow)
 
 		pattern = re.compile(r'Recent LNKs\\[^\\]*\\[^\\]*\.csv')
-		if pattern.search(rawFile):
+		if pattern.search(rawFile) and "Report" in rawFile:
 			currentrecent = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheetname='File or Folder Opening', parse_cols="K:O",header=1)
 			openLastRow = recentRowCount
 
@@ -192,7 +192,7 @@ def outputSummary(directory, projectname, results):
 			except:
 				logger.info(rawFile + " is empty")
 
-		if "AutoRun Info.csv" in rawFile:
+		if rawFile.endswith("AutoRun Info.csv"):
 			rawdata = open(rawFile, "r").read()
 			result = chardet.detect(rawdata)
 			charenc = result['encoding']
