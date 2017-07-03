@@ -657,7 +657,7 @@ def main():
     dbhandle = db.databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
     #debug(DEBUG_FLAG, "INFO: dbhandle is " + str(dbhandle) + "\n")
 
-    #insertCveDetails(dbhandle)
+    insertCveDetails(dbhandle)
     insertWindowsPatchDetails(dbhandle)
 
 if __name__ == '__main__':
