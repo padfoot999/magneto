@@ -82,6 +82,7 @@ sub pluginmain {
 	my $root_key = $reg->get_root_key;
 	my $key_path = "MountedDevices";
 	my %mountedDevices;
+	my %deviceClassID;
 	if (my $key = $root_key->get_subkey($key_path)) {
 		my @data = $key->get_list_of_values();
 		foreach my $d (@data) {
@@ -92,7 +93,9 @@ sub pluginmain {
 			my @dataArray = split /#/, $data;
 			my @guidArray = split /Volume/, $guid;
 			if (exists $guidArray[1]) {
-			$mountedDevices{$dataArray[-2]} = $guidArray[-1]; }
+				$mountedDevices{$dataArray[-2]} = $guidArray[-1];
+				$deviceClassID{$dataArray[-2]} = $dataArray[1];
+			}
 		}
 	}
 	else {
@@ -291,7 +294,34 @@ sub pluginmain {
 	else {
 		::rptMsg($key_path." not found.");
 	}
-
+	#Checks if all serial numbers of devives found are included in dictionary
+	foreach my $serialnum (keys %mountedDevices) {
+		my $find = 0;
+		for my $usb (@usbDictionary) {
+			if($usb->{'SerialNumber'} == $serialnum) { $find = 1; }
+		}
+		if($find == 0) {
+			my $usbValues = {};
+			my $volguid = $mountedDevices{$serialnum};
+			$usbValues->{'VolumeGUID'} = $volguid;
+			$usbValues->{'AssociatedUser'} = $ownerDictionary{$volguid};
+			for (grep /\b\Q$serialnum\E\b/i, keys %diskDevice)
+			{
+			    $usbValues->{'RebootConnected'} = $diskDevice{$_};
+			}
+			for (grep /\b\Q$serialnum\E\b/i, keys %driveDictionary)
+			{
+			    $usbValues->{'DriveLetter'} = $driveDictionary{$_};
+			}
+			$usbValues->{'DeviceClassID'} = $deviceClassID{$serialnum};
+			$usbValues->{'SerialNumber'} = $serialnum;
+			$usbValues->{'FriendlyName'} = "";
+			$usbValues->{'FirstInstallDate'} = "";
+			$usbValues->{'LastConnectedDate'} = "";
+			$usbValues->{'LastRemovedDate'} = "";
+			push @usbDictionary, $usbValues;
+		}
+	}
 	my $workbook = Excel::Writer::XLSX->new($output.'USBParser.xlsx');
 	my $worksheet = $workbook->add_worksheet();
 	$worksheet->write(0,0,"Device Class ID");
