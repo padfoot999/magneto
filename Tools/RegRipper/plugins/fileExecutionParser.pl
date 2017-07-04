@@ -63,8 +63,10 @@ sub pluginmain {
 	my $class = shift;
 	my $user = shift;
 	my $software = $user;
+	my $amcache = $user;
 	my $output = $user;
 	$output =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1/g;
+	$amcache =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1\\AmCache\\Amcache.hve/g;
 	$software =~ s/(.*\\)([^\\]*)_(USER_[^\\]*).dat$/$1SOFTWARE_$2.hiv/g;
 	my $system = $software;
 	$system =~ s/(.*)SOFTWARE([^\\]*$)/$1SYSTEM$2/g;
@@ -88,7 +90,10 @@ sub pluginmain {
 	$worksheet->write(0,12,"13");
 	$worksheet->write(0,13,"14");
 	$worksheet->write(0,14,"15");
-
+	$worksheet->write(0,15,"16");
+	$worksheet->write(0,16,"17");
+	$worksheet->write(0,17,"18");
+	$worksheet->write(0,18,"19");
 
 	my $row = 1;
 # First thing to do is get the ControlSet00x marked current...this is
@@ -225,6 +230,41 @@ sub pluginmain {
 	    ($temp, $who) = split /\\/, $who, 2;
 	    $userMapping{$rest} = $who;
 	}
+
+	$row = 1;
+	eval {
+		$reg = Parse::Win32Registry->new($amcache);
+		$root_key = $reg->get_root_key;
+		my @sk1;
+		my @sk;
+		my (@t,$gt);
+		
+		$key_path = 'Root\\File';
+		if ($key = $root_key->get_subkey($key_path)) {
+			
+			@sk1 = $key->get_list_of_subkeys();
+			foreach my $s1 (@sk1) {
+	# Volume GUIDs			
+				my $volguid = $s1->get_name();
+				
+				@sk = $s1->get_list_of_subkeys();
+				if (scalar(@sk) > 0) {
+					foreach my $s (@sk) {
+						$worksheet->write($row,15,$s->get_value("15")->get_data());
+						$worksheet->write($row,16,$s->get_value("101")->get_data());
+						$worksheet->write($row,17,gmtime($s->get_timestamp())." Z");
+						$worksheet->write($row,18,$volguid);
+						$row++;
+					}
+				}	
+			}
+		}
+		else {
+			::rptMsg($key_path." not found.");
+		}
+	};
+
+
 	$row = 1;
 	#Volume GUID => User Name
 	my %ownerDictionary;
