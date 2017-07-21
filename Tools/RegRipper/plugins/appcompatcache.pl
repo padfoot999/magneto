@@ -125,7 +125,12 @@ sub pluginmain {
 #				::rptMsg(sprintf "Data Length: 0x%08x",length($app_data));
 				appWin8($app_data);
 #				probe($app_data);
-				
+			}
+			elsif ($sig == 0x00) {
+# Windows 10 system
+				eval {
+					appWin81($app_data);				
+				};
 			}
 			elsif ($sig == 0x30) {
 # Windows 10 system
@@ -367,7 +372,7 @@ sub appWin8 {
 	my ($jmp, $t0, $t1, $sz, $name);
 	my $ct = 0;
 	my $ofs = unpack("V",substr($data,0,4));
-	
+
 	while($ofs < $len) {
 		my $tag = unpack("V",substr($data,$ofs,4));
 # 32-bit		
@@ -400,6 +405,30 @@ sub appWin8 {
 	
 	}
 }
+
+#-----------------------------------------------------------
+# appWin81()
+#-----------------------------------------------------------
+sub appWin81 {
+	my $data = shift;
+	my $len = length($data);
+	my ($jmp, $t0, $t1, $sz, $name);
+	my $ct = 0;
+	my $ofs =  0x80;
+
+	while($ofs < $len) {
+		$jmp = unpack("V",substr($data,$ofs + 8,4));
+		$sz = unpack("v",substr($data,$ofs + 0x0C,2));
+		$name = substr($data,$ofs + 0x0E,$sz + 2);
+		$name =~ s/\00//g;
+		($t0,$t1) = unpack("VV",substr($data,($ofs + 0x0E + $sz +2 + 8),8));
+		$files{$ct}{filename} = $name;
+		$files{$ct}{modtime} = ::getTime($t0,$t1);
+		$ct++;
+		$ofs += ($jmp + 12);
+	}
+}
+
 
 #-----------------------------------------------------------
 # appWin10()
