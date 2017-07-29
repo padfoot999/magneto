@@ -97,6 +97,7 @@ def postTriage(directory,projectname):
 		if "SYSTEM_" in rawFile:
 			currentWorkingDirectory = os.getcwd()
 			outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SYSTEM_Ripped_Report.txt"
+			outputFile2 = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SYSTEM_Regtime.txt"
 			outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
 			if not os.path.exists(outputdir):
 				try:
@@ -107,11 +108,14 @@ def postTriage(directory,projectname):
 			os.chdir('.\Tools\RegRipper')
 			with open(outputFile, "a") as outfile:
 				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'system'], stdout=outfile)
+			with open(outputFile2, "a") as outfile:
+				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'regtime'], stdout=outfile)
 			os.chdir(currentWorkingDirectory)
 
 		if "SOFTWARE_" in rawFile:
 			currentWorkingDirectory = os.getcwd()
 			outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SOFTWARE_Ripped_Report.txt"
+			outputFile2 = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SOFTWARE_Regtime.txt"
 			outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
 			if not os.path.exists(outputdir):
 				try:
@@ -122,11 +126,14 @@ def postTriage(directory,projectname):
 			os.chdir('.\Tools\RegRipper')
 			with open(outputFile, "a") as outfile:
 				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'software'], stdout=outfile)
+			with open(outputFile2, "a") as outfile:
+				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'regtime'], stdout=outfile)
 			os.chdir(currentWorkingDirectory)
 
 		if "SAM_" in rawFile:
 			currentWorkingDirectory = os.getcwd()
 			outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SAM_Ripped_Report.txt"
+			outputFile2 = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SAM_Regtime.txt"
 			outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
 			if not os.path.exists(outputdir):
 				try:
@@ -137,11 +144,14 @@ def postTriage(directory,projectname):
 			os.chdir('.\Tools\RegRipper')
 			with open(outputFile, "a") as outfile:
 				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'sam'], stdout=outfile)
+			with open(outputFile2, "a") as outfile:
+				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'regtime'], stdout=outfile)
 			os.chdir(currentWorkingDirectory)
 
 		if "SECURITY_" in rawFile:
 			currentWorkingDirectory = os.getcwd()
 			outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SECURITY_Ripped_Report.txt"
+			outputFile2 = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\SECURITY_Regtime.txt"
 			outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
 			if not os.path.exists(outputdir):
 				try:
@@ -152,6 +162,8 @@ def postTriage(directory,projectname):
 			os.chdir('.\Tools\RegRipper')
 			with open(outputFile, "a") as outfile:
 				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'security'], stdout=outfile)
+			with open(outputFile2, "a") as outfile:
+				subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'regtime'], stdout=outfile)
 			os.chdir(currentWorkingDirectory)
 
 		# if "HKCU_" in rawFile:
@@ -175,12 +187,14 @@ def postTriage(directory,projectname):
 			subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'usbParser'])
 			subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'fileOpeningParser'])
 			subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'fileExecutionParser'])
+
 			os.chdir(currentWorkingDirectory)
 
 		if "Evidence" in rawFile:
 			if "USER" in rawFile and ".dat" in rawFile:
 				currentWorkingDirectory = os.getcwd()
 				outputFile = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\\" + os.path.splitext(os.path.basename(rawFile))[0] + "_Ripped_Report.txt"
+				outputFile2 = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname + "\\" + os.path.splitext(os.path.basename(rawFile))[0] + "_Regtime.txt"
 				outputdir = currentWorkingDirectory + "\Results\\" + projectname + "\\RegRipper-" + imgname
 				if not os.path.exists(outputdir):
 					try:
@@ -191,6 +205,8 @@ def postTriage(directory,projectname):
 				os.chdir('.\Tools\RegRipper')
 				with open(outputFile, "a") as outfile:
 					subprocess.call(['perl','rip2.pl', '-r', rawFile, '-f', 'ntuser'], stdout=outfile)
+				with open(outputFile2, "a") as outfile:
+					subprocess.call(['perl','rip2.pl', '-r', rawFile, '-p', 'regtime'], stdout=outfile)
 				os.chdir(currentWorkingDirectory)
 
 		if "$MFTcopy" in rawFile:
@@ -205,15 +221,26 @@ def postTriage(directory,projectname):
 				subprocess.call(['python','.\Tools\\rfcparse.py', '-f', rawFile], stdout=outfile)
 
 
-	users = []
+	users_jumplist = []
 	if os.path.isdir(directory + "\\Evidence\\Jump Lists"):
 		for root, dirs, files in os.walk(directory + "\\Evidence\\Jump Lists"):
-			users.extend(dirs)
+			users_jumplist.extend(dirs)
 			break
-	for user in users:
+	for user in users_jumplist:
 		if not any((fname.endswith('CustomDestinations.tsv') or fname.endswith('AutomaticDestinations.tsv')) for fname in os.listdir(directory + "\\Evidence\\Jump Lists\\" + user)):
 			subprocess.call(['.\Tools\JLECmd-master\JLECmd-master\JLECmd\\bin\Debug\JLECmd.exe', '-d', directory + "\\Evidence\\Jump Lists\\" + user + "\\Automatic", '--csv', directory + "\\Evidence\\Jump Lists\\" + user])
 			subprocess.call(['.\Tools\JLECmd-master\JLECmd-master\JLECmd\\bin\Debug\JLECmd.exe', '-d', directory + "\\Evidence\\Jump Lists\\" + user + "\\Custom", '--csv', directory + "\\Evidence\\Jump Lists\\" + user])
+	users_recent = []
+	if os.path.isdir(directory + "\\Evidence\\Recent LNKs"):
+		for root, dirs, files in os.walk(directory + "\\Evidence\\Recent LNKs"):
+			users_recent.extend(dirs)
+			break
+	for user in users_recent:
+		if not any((fname.startswith('Report') and fname.endswith('.csv')) for fname in os.listdir(directory + "\\Evidence\\Recent LNKs\\" + user)):
+			try:
+				subprocess.call(['.\Tools\lnkparser.exe', '-o', directory + "\\Evidence\\Recent LNKs\\" + user, '-c', '-s', directory + "\\Evidence\\Recent LNKs\\" + user])
+			except:
+				logger.info(user + " does not have Recent LNK files.")
 
 def main():
 	parser = argparse.ArgumentParser(description="Process triage, network or memory dump evidence file(s), sorted by projects for correlation")
@@ -240,7 +267,7 @@ def main():
 						if directory not in imagelist:
 							imagelist.append(directory)
 							postTriage(str(os.path.join(root,directory)),projectname)
-
+							
 if __name__ == '__main__':
 	main()
 
