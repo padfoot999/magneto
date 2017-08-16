@@ -6,19 +6,13 @@
 #Include <array.au3>
 #include <Crypt.au3>
 #include <WinAPIFiles.au3>
+#include <ButtonConstants.au3>
+#include <EditConstants.au3>
+#include <FileConstants.au3>
 ;DEBUGGING TIPS: Note that if you run as administrator, the LINE indicated in the error message is inaccurate. Revert to user mode for debugging accuracy.
 ;DEBUGGING TIP2: If there are no output for VSC functions, select Compile Script (x64) and then run the .exe file as administrator
 
 Global 	$tStamp = @YEAR & @MON & @MDAY & @HOUR & @MIN & @SEC
-
-;Reports Directory
-Global	$RptsDir = @ScriptDir & "\" & $tStamp & " - " & @ComputerName & " Incident"
-
-;Evidence Directory
-Global	$EvDir = $RptsDir & "\Evidence\"
-
-;Browser Directory
-Global	$BrowserDir = $RptsDir & "\Browser\"
 
 ;Tools Directory
 Global 	$tools = '"' &@ScriptDir & '\Tools\'
@@ -26,21 +20,17 @@ Global 	$tools = '"' &@ScriptDir & '\Tools\'
 ;Note that in the Tools directory contain cmd.exe from Windows XP
 ;ZFZF: To update this with a sanitized version
 
-Global 	$HashDir = $RptsDir & "\Evidence"
-Global	$JmpLst = $EvDir & "Jump Lists"
-
 ;Using our own cammand prompt instead of the system
 Global	$shell = '"' & @ScriptDir & '\Tools\cmd.exe"'
 Global 	$shellex = '"' & @ScriptDir & '\Tools\cmd.exe" /c'
 
 ;Logo Image
-Global	$image = "zf.jpg"
+Global  $image = "zf.jpg"
 
 ;ZFZF: How is this used?
 Global 	$RecentPath = RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders", "Recent")
 
 ;Log file
-Global	$Log = $RptsDir & "\Incident Log.txt"
 Global 	$ini_file
 Global 	$fcnt
 
@@ -78,7 +68,7 @@ Func TriageGUI()						;Creates a graphical user interface for Triage
    Global 	$Routes_chk, $ARP_chk, $DNS_chk, $NBT_chk, $nShare_chk
    Global 	$nFiles_chk, $Sessions_chk, $WrkgrpPC_chk
    Global 	$SYSTEM_chk, $SECURITY_chk, $SAM_chk, $SOFTWARE_chk, $HKCU_chk, $HKU_chk, $UsrC_chk
-   Global 	$NTFSInfo_chk, $DiskMnt_chk, $Tree_chk, $VolInfo_chk
+   Global 	$NTFSInfo_chk, $VolInfo_chk, $DiskMnt_chk, $Tree_chk
    Global 	$MemDmp_chk, $JmpLst_chk, $EvtCpy_chk
    Global 	$PF_chk, $RF_chk, $sysint_chk
    Global 	$PF_Target_chk, $RF_Target_chk, $JmpLst_Target_chk
@@ -87,13 +77,10 @@ Func TriageGUI()						;Creates a graphical user interface for Triage
    Global	$MFTg_chk
 
    ;ZF added
-   Global	$AutorunVTEnabled_chk, $ProcexpVTEnabled_chk
-
-   Global	$dcInfo_chk
-   Global	$wmi_tz_chk, $wmi_usr_chk, $wmi_model_chk, $wmi_hotfix_chk, $wmi_warranty_chk, $wmi_nic_chk, $wmi_manu_chk, $wmi_software_chk, $wmi_evt_chk, $wmi_proc_chk, $wmi_job_chk, $wmi_startup_chk, $wmi_domain_chk, $wmi_service_chk, $wmi_bios_chk, $wmi_hd_chk, $wmi_share_chk, $wmi_prodkey_chk
+   Global	$AutorunVTEnabled_chk
    Global	$bwsr_cache_chk, $bwsr_hist_chk, $bwsr_fav_chk, $bwsr_cookies_chk, $bwsr_dl_chk, $bwsr_autocomplete_chk, $bwsr_webcache_chk, $bwsr_password_chk
 
-   GUICreate("Triage:  KPMG Incident Response", 810, 300)
+   GUICreate("Triage:  KPMG Incident Response", 810, 350)
 
 	  $font = "Arial"
 
@@ -109,218 +96,137 @@ Func TriageGUI()						;Creates a graphical user interface for Triage
 
 	  $inidsp = StringTrimLeft($ini_file, StringInStr($ini_file, "\", 0, -1))
 
-	  $iniread = GUICtrlCreateLabel("Reading from " & $inidsp & " configuration.", 106, 262, 354, 20, BitOR($SS_SIMPLE, $SS_SUNKEN))
+	  $iniread = GUICtrlCreateLabel("Reading from " & $inidsp & " configuration.", 106, 300, 354, 20, BitOR($SS_SIMPLE, $SS_SUNKEN))
 
-	  $tr_tab = GUICtrlCreateTab(3, 5, 805, 235)
+	  $tr_tab = GUICtrlCreateTab(3, 60, 805, 225)
 
 	  ;ZF added
 
 	  GUICtrlCreateTabItem("System Information")
 
-		 $Sys_chk = GUICtrlCreateCheckbox("System Information", 10, 30)
-			GUICtrlSetTip($Sys_chk, "Gather information about the type of system under query.")
-		 $UsrInfo_chk = GUICtrlCreateCheckbox("User Account Information", 10, 50)
-			GUICtrlSetTip($UsrInfo_chk, "Gathers user account information from net.")
-		 $Proc_chk = GUICtrlCreateCheckbox("Capture Processes", 10, 70)
-			GUICtrlSetTip($Proc_chk, "Capture information in regards to the running processes.")
-		 $Serv_chk = GUICtrlCreateCheckbox("Capture Services", 10, 90)
-			GUICtrlSetTip($Serv_chk, "Gather information about services on the PC.")
-		 $FileAssoc_chk = GUICtrlCreateCheckbox("Handles", 10, 110)
-			GUICtrlSetTip($FileAssoc_chk, "Search for open file references.")
-		 $STsk_chk = GUICtrlCreateCheckbox("Scheduled Tasks Information", 10, 130)
-			GUICtrlSetTip($STsk_chk, "Query system for any tasks that may have been scheduled by users.")
-		 $Host_chk = GUICtrlCreateCheckbox("Hostname Information", 10, 150)
-			GUICtrlSetTip($Host_chk, "Determine the system's hostname.")
-		 $AutoRun_chk = GUICtrlCreateCheckbox("AutoRun Information", 10, 170)
+		 ;$AutoRun_chk = GUICtrlCreateCheckbox("AutoRun Information", 10, 90)
 			GUICtrlSetTip($AutoRun_chk, "Gather information about system start-up.  Often a source of persistence for intrusions.")
-		 $AutoRun_Target_chk = GUICtrlCreateCheckbox("Collect AutoRun Target Files", 10, 190)
+		 ;$AutoRun_Target_chk = GUICtrlCreateCheckbox("Collect AutoRun Target Files", 10, 110)
 			GUICtrlSetTip($AutoRun_Target_chk, "Gather all Autorun Target files on the system.")
-		 $AcctInfo_chk = GUICtrlCreateCheckbox("Account Settings", 10, 210)
-			GUICtrlSetTip($AcctInfo_chk, "Get details about user account settings.")
-		 $srum_chk = GUICtrlCreateCheckbox("System Resource Utilization Manager (SRUM) Information", 400, 30)
+		 $srum_chk = GUICtrlCreateCheckbox("System Resource Utilization Manager (SRUM) Information", 10, 90)
 			GUICtrlSetTip($srum_chk, "Collect SRUM.dat from computer and outputs XLSX file.")
-
-	  GUICtrlCreateTabItem("Network Information")
-
-		 $IPs_chk = GUICtrlCreateCheckbox("IP Configuration", 10, 30)
-			GUICtrlSetTip($IPs_chk, "Gather information in relation to Internet Protocol configuration.")
-		 $CONN_chk = GUICtrlCreateCheckbox("Active Connections", 10, 50)
-			GUICtrlSetTip($CONN_chk, "Get information about current network connections.")
-		 $Routes_chk = GUICtrlCreateCheckbox("Connection Routes", 10, 70)
-			GUICtrlSetTip($Routes_chk, "Provides information about current network routes.")
-		 $ARP_chk = GUICtrlCreateCheckbox("ARP Data", 10, 90)
-			GUICtrlSetTip($ARP_chk, "Gather information from the Address Resolution Protocol.")
-		 $DNS_chk = GUICtrlCreateCheckbox("DNS Information", 10, 110)
-			GUICtrlSetTip($DNS_chk, "Gather information from the Domain Name System.")
-		 $NBT_chk = GUICtrlCreateCheckbox("NetBIOS Information", 10, 130)
-			GUICtrlSetTip($NBT_chk, "Get information about the Network Basic Input/Output System.")
-		 $nShare_chk = GUICtrlCreateCheckbox("Local Network Shares", 10, 150)
-			GUICtrlSetTip($nShare_chk, "Determine if any network shares are being hosted on local system.")
-		 $nFiles_chk = GUICtrlCreateCheckbox("Open Shared Files", 10, 170)
-			GUICtrlSetTip($nFiles_chk, "Determine if any shared files are currently being accessed.")
-		 $Sessions_chk = GUICtrlCreateCheckbox("Connected Sessions", 10, 190)
-			GUICtrlSetTip($Sessions_chk, "Gather information about any possible connected sessions.")
-		 $WrkgrpPC_chk = GUICtrlCreateCheckbox("Workgroup Computers", 10, 210)
-			GUICtrlSetTip($WrkgrpPC_chk, "Get information about workgroup PCs.")
 
 	  GUICtrlCreateTabItem("Registry")
 
-		 $SYSTEM_chk = GUICtrlCreateCheckbox("Save SYSTEM registry hive", 10, 30)
+		 $SYSTEM_chk = GUICtrlCreateCheckbox("Save SYSTEM registry hive", 10, 90)
 			GUICtrlSetTip($SYSTEM_chk, "Collect a copy of the SYSTEM Registry hive.")
-		 $SECURITY_chk = GUICtrlCreateCheckbox("Save SECURITY registry hive", 10, 50)
+		 $SECURITY_chk = GUICtrlCreateCheckbox("Save SECURITY registry hive", 10, 110)
 			GUICtrlSetTip($SECURITY_chk, "Collect a copy of the SECURITY Registry hive.")
-		 $SAM_chk = GUICtrlCreateCheckbox("Save SAM registry hive", 10, 70)
+		 $SAM_chk = GUICtrlCreateCheckbox("Save SAM registry hive", 10, 130)
 			GUICtrlSetTip($SAM_chk, "Collect a copy of the System Account Managment registry hive.")
-		 $SOFTWARE_chk = GUICtrlCreateCheckbox("Save SOFTWARE registry hive", 10,90)
+		 $SOFTWARE_chk = GUICtrlCreateCheckbox("Save SOFTWARE registry hive", 10,150)
 			GUICtrlSetTip($SOFTWARE_chk, "Collect a copy of the SOFTWARE registry hive.")
-		 $HKCU_chk = GUICtrlCreateCheckbox("Save the Current User registry hive", 10, 110)
+		 $HKCU_chk = GUICtrlCreateCheckbox("Save the Current User registry hive", 10, 170)
 			GUICtrlSetTip($HKCU_chk, "Collect the NTUSER.DAT registry hive for just the currently logged in user.")
-		 $HKU_chk = GUICtrlCreateCheckbox("Save all user registry hives", 10, 130)
+		 $HKU_chk = GUICtrlCreateCheckbox("Save all user registry hives", 10, 190)
 			GUICtrlSetTip($HKU_chk, "Collect the NTUSER.DAT registry hive for all users on the system.")
 
 	  GUICtrlCreateTabItem("Disk Information")
 
-		 $NTFSInfo_chk = GUICtrlCreateCheckbox("NTFS Information", 10, 30)
+		 $NTFSInfo_chk = GUICtrlCreateCheckbox("NTFS Information", 10, 90)
 			GUICtrlSetTip($NTFSInfo_chk, "Gather disk information if formatted with New Technology File System.")
-		 $DiskMnt_chk = GUICtrlCreateCheckbox("Capture Mounted Disks", 10, 50)
-			GUICtrlSetTip($DiskMnt_chk, "Get information about any mounted disks on the live system.")
-		 $Tree_chk = GUICtrlCreateCheckbox("Directory Information", 10, 70)
+		 $Tree_chk = GUICtrlCreateCheckbox("Directory Information", 10, 110)
 			GUICtrlSetTip($Tree_chk, "Print a listing of files on they system and the directory structure.")
-		 $VolInfo_chk = GUICtrlCreateCheckbox("Volume Information", 10, 90)
+		 $VolInfo_chk = GUICtrlCreateCheckbox("Volume Information", 10, 130)
 			GUICtrlSetTip($VolInfo_chk, "Get information about the C Drive volume with Sleuth Kit.")
 
 	  GUICtrlCreateTabItem("Evidence Collection")
 
-		 $MemDmp_chk = GUICtrlCreateCheckbox("Collect Memory Image", 10, 30)
-			GUICtrlSetTip($MemDmp_chk, "Create copy of physical memory for later analysis.")
-		 $PF_chk = GUICtrlCreateCheckbox("Collect Prefetch Files", 10, 50)
+		 $PF_chk = GUICtrlCreateCheckbox("Collect Prefetch Files", 10, 90)
 			GUICtrlSetTip($PF_chk, "Gather all prefetch files on the system to determine file execution.")
-		 $PF_Target_chk = GUICtrlCreateCheckbox("Collect Target Prefetch Files", 10, 70)
+		 $PF_Target_chk = GUICtrlCreateCheckbox("Collect Target Prefetch Files", 10, 110)
 			GUICtrlSetTip($PF_Target_chk, "Gather all target files of Prefetch.")
-		 $RF_chk = GUICtrlCreateCheckbox("Collect Recent Folder Files", 10, 90)
+		 $RF_chk = GUICtrlCreateCheckbox("Collect Recent Folder Files", 10, 130)
 			GUICtrlSetTip($RF_chk, "Gather the link files that have been recently used, for each user.")
-		 $RF_Target_chk = GUICtrlCreateCheckbox("Collect Target Recent Folder Files", 10, 110)
+		 $RF_Target_chk = GUICtrlCreateCheckbox("Collect Target Recent Folder Files", 10, 150)
 			GUICtrlSetTip($RF_Target_chk, "Gather the target files of link files.")
-		 $JmpLst_chk = GUICtrlCreateCheckbox("Collect Jump List Files", 10, 130)
+		 $JmpLst_chk = GUICtrlCreateCheckbox("Collect Jump List Files", 10, 170)
 			GUICtrlSetTip($JmpLst_chk, "Gather both Automatic and Custom destination jump lists to gain insight into recent files used, for each user.")
-		 $JmpLst_Target_chk = GUICtrlCreateCheckbox("Collect Target Jump List Files", 10, 150)
+		 $JmpLst_Target_chk = GUICtrlCreateCheckbox("Collect Target Jump List Files", 10, 190)
 			GUICtrlSetTip($JmpLst_Target_chk, "Gather target files of Automatic and Custom destination jump lists.")
-		 $EvtCpy_chk = GUICtrlCreateCheckbox("Collect Event Logs from System.", 10, 170)
+		 $EvtCpy_chk = GUICtrlCreateCheckbox("Collect Event Logs from System.", 10, 210)
 			GUICtrlSetTip($EvtCpy_chk, "Copy any event logs on the system.")
-		 $UsrC_chk = GUICtrlCreateCheckbox("Collect Profile USRCLASS.dat Files", 10, 190)
+		 $UsrC_chk = GUICtrlCreateCheckbox("Collect Profile USRCLASS.dat Files", 10, 230)
 			GUICtrlSetTip($UsrC_chk, "Copy the USERCLASS portion of registry for analysis of Windows Shell.")
-		 $MFTg_chk = GUICtrlCreateCheckbox("Collect a copy of the MFT", 10, 210)
+		 $MFTg_chk = GUICtrlCreateCheckbox("Collect a copy of the MFT", 10, 250)
 			GUICtrlSetTip($MFTg_chk, "Collect a copy of the Master File Table for analysis.")
 
 	  GUICtrlCreateTabItem("Browser")
 
-		 $bwsr_cache_chk = GUICtrlCreateCheckbox("Cache Collection", 10, 30)
+		 $bwsr_cache_chk = GUICtrlCreateCheckbox("Cache Collection", 10, 90)
 			GUICtrlSetTip($bwsr_cache_chk, "Collects IE, Mozilla and Chrome cache for later analysis.")
-		 $bwsr_hist_chk = GUICtrlCreateCheckbox("History Collection", 10, 50)
+		 $bwsr_hist_chk = GUICtrlCreateCheckbox("History Collection", 10, 110)
 			GUICtrlSetTip($bwsr_hist_chk, "Collects IE, Mozilla and Chrome History for later analysis.")
-		 $bwsr_fav_chk = GUICtrlCreateCheckbox("Favourites/Bookmarks Collection", 10, 70)
+		 $bwsr_fav_chk = GUICtrlCreateCheckbox("Favourites/Bookmarks Collection", 10, 130)
 			GUICtrlSetTip($bwsr_fav_chk, "Collects IE and Mozilla Favourites/Bookmarks for later analysis.")
-		 $bwsr_cookies_chk = GUICtrlCreateCheckbox("Cookies Collection", 10, 90)
+		 $bwsr_cookies_chk = GUICtrlCreateCheckbox("Cookies Collection", 10, 150)
 			GUICtrlSetTip($bwsr_cookies_chk, "Collects IE, Mozilla and Chrome Cookies for later analysis.")
-		 $bwsr_dl_chk = GUICtrlCreateCheckbox("Download History", 10, 110)
+		 $bwsr_dl_chk = GUICtrlCreateCheckbox("Download History", 10, 170)
 			GUICtrlSetTip($bwsr_dl_chk, "Collects IE, Mozilla and Chrome Cookies download history for later analysis.")
-		 $bwsr_autocomplete_chk = GUICtrlCreateCheckbox("AutoComplete Collection", 10, 130)
+		 $bwsr_autocomplete_chk = GUICtrlCreateCheckbox("AutoComplete Collection", 10, 190)
 			GUICtrlSetTip($bwsr_autocomplete_chk, "Collects IE, Mozilla and Chrome Cookies autocomplete history for later analysis.")
-		 $bwsr_password_chk = GUICtrlCreateCheckbox("Cache Password Collection", 10, 150)
-			GUICtrlSetTip($bwsr_password_chk, "Recover passwords stored by Web Browser.")
-		 $bwsr_webcache_chk = GUICtrlCreateCheckbox("Export IE WebCache", 10, 170)
+		 $bwsr_webcache_chk = GUICtrlCreateCheckbox("Export IE WebCache", 10, 210)
 			GUICtrlSetTip($bwsr_webcache_chk, "Exports IE WebCacheV01.dat or IEWebCacheV24.dat.")
 
-	  GUICtrlCreateTabItem("WMIC")
+	  ;GUICtrlCreateTabItem("Volume Shadow Copies (VSCs)")
 
-		 $wmi_tz_chk = GUICtrlCreateCheckbox("Timezone Information", 10, 30)
-			GUICtrlSetTip($wmi_tz_chk, "Gather Timezone Information using wmic.")
-		 $wmi_usr_chk = GUICtrlCreateCheckbox("User Information", 10, 50)
-			GUICtrlSetTip($wmi_usr_chk, "Gather User Information using wmic.")
-		 $wmi_model_chk = GUICtrlCreateCheckbox("Model Information", 10, 70)
-			GUICtrlSetTip($wmi_model_chk, "Gather Model Information using wmic.")
-		 $wmi_warranty_chk = GUICtrlCreateCheckbox("Serial Number Information", 10, 90)
-			GUICtrlSetTip($wmi_warranty_chk, "Gather Serial Number Information using wmic.")
-		 $wmi_nic_chk = GUICtrlCreateCheckbox("NIC Information", 10, 110)
-			GUICtrlSetTip($wmi_nic_chk, "Gather NIC Information using wmic.")
-		 $wmi_manu_chk = GUICtrlCreateCheckbox("Manufacturer Information", 10, 130)
-			GUICtrlSetTip($wmi_manu_chk, "Gather Manufacturer Information using wmic.")
-		 $wmi_software_chk= GUICtrlCreateCheckbox("Software List Information", 10, 150)
-			GUICtrlSetTip($wmi_software_chk, "Gather Software List Information using wmic.")
-		 $wmi_evt_chk = GUICtrlCreateCheckbox("Event Information", 10, 170)
-			GUICtrlSetTip($wmi_evt_chk, "Gather Event Information using wmic.")
-		 $wmi_proc_chk = GUICtrlCreateCheckbox("Process Information", 10, 190)
-			GUICtrlSetTip($wmi_proc_chk, "Gather Process Information using wmic.")
-		 $wmi_job_chk = GUICtrlCreateCheckbox("Job List Information", 10, 210)
-			GUICtrlSetTip($wmi_job_chk, "Gather Job List Information using wmic.")
-		 $wmi_startup_chk = GUICtrlCreateCheckbox("Startup Information", 400, 30)
-			GUICtrlSetTip($wmi_startup_chk, "Gather Startup Information using wmic.")
-		 $wmi_domain_chk = GUICtrlCreateCheckbox("Domain Information", 400, 50)
-			GUICtrlSetTip($wmi_domain_chk, "Gather Domain Information using wmic.")
-		 $wmi_service_chk = GUICtrlCreateCheckbox("Service Information", 400, 70)
-			GUICtrlSetTip($wmi_service_chk, "Gather Service Information using wmic.")
-		 $wmi_bios_chk = GUICtrlCreateCheckbox("BIOS Information", 400, 90)
-			GUICtrlSetTip($wmi_bios_chk, "Gather BIOS Information using wmic.")
-		 $wmi_hd_chk = GUICtrlCreateCheckbox("Harddrive Information", 400, 110)
-			GUICtrlSetTip($wmi_hd_chk, "Gather Harddrive Information using wmic.")
-		 $wmi_share_chk = GUICtrlCreateCheckbox("Shared Drives and Folders Information", 400, 130)
-			GUICtrlSetTip($wmi_share_chk, "Gather Shared Drives and Folders Information using wmic.")
-		 $wmi_hotfix_chk = GUICtrlCreateCheckbox("Hotfix Information", 400, 150)
-			GUICtrlSetTip($wmi_hotfix_chk, "Gather information of all installed hotfix using wmic.")
-		 $wmi_prodkey_chk = GUICtrlCreateCheckbox("Product Key Information", 400, 170)
-			GUICtrlSetTip($wmi_prodkey_chk, "Obtains original product key.")
-
-	  GUICtrlCreateTabItem("Volume Shadow Copies (VSCs)")
-
-		 $VS_info_chk = GUICtrlCreateCheckbox("Collect Volume Shadow Copy Information", 10, 30)
-			GUICtrlSetTip($VS_PF_chk, "Outputs Volume Shadow Copy Information to text file.")
-		 $VS_PF_chk = GUICtrlCreateCheckbox("Collect Prefetch Files from VSCs", 10, 50)
-			GUICtrlSetTip($VS_PF_chk, "Gather Prefetch files through Volume Shadow Copies for historical file execution analysis.")
-		 $VS_RF_chk = GUICtrlCreateCheckbox("Collect Recent Folder Files from VSCs", 10, 70)
-			GUICtrlSetTip($VS_RF_chk, "Gather links for recent folder for each user in Volume Shadow Copies.")
-		 $VS_JmpLst_chk = GUICtrlCreateCheckbox("Collect JumpLists from VSCs", 10, 90)
-			GUICtrlSetTip($VS_JmpLst_chk, "Gather Jump List information for each user from Volume Shadow Copies.")
-		 $VS_EvtCpy_chk = GUICtrlCreateCheckbox("Collect EventLogs from VSCs", 10, 110)
-			GUICtrlSetTip($VS_EvtCpy_chk, "Collect Event Logs occuring through history with Volume Shadow Copies.")
-		 $VS_SYSREG_chk = GUICtrlCreateCheckbox("Collect SYSTEM hive from VSCs", 10, 130)
-			GUICtrlSetTip($VS_SYSREG_chk, "Collect the SYSTEM registry hive through history with Volume Shadow Copies.")
-		 $VS_SECREG_chk = GUICtrlCreateCheckbox("Collect SECURITY hive from VSCs", 10, 150)
-			GUICtrlSetTip($VS_SECREG_chk, "Collect the SECURITY registry hive through history with Volume Shadow Copies.")
-		 $VS_SAMREG_chk = GUICtrlCreateCheckbox("Collect SAM hive from VSCs", 10, 170)
-			GUICtrlSetTip($VS_SAMREG_chk, "Collect the System Account Management registry hive through history with Volume Shadow Copies.")
-		 $VS_SOFTREG_chk = GUICtrlCreateCheckbox("Collect SOFTWARE hive from VSCs", 10, 190)
-			GUICtrlSetTip($VS_SOFTREG_chk, "Collect the SOFTWARE registry hive through history with Volume Shadow Copies.")
-		 $VS_USERREG_chk = GUICtrlCreateCheckbox("Collect USER hives from VSCs", 10, 210)
-			GUICtrlSetTip($VS_USERREG_chk, "Collect the NTUSER.dat registry hive through history with Volume Shadow Copies.")
+		 ;$VS_info_chk = GUICtrlCreateCheckbox("Collect Volume Shadow Copy Information", 10, 60)
+			;GUICtrlSetTip($VS_PF_chk, "Outputs Volume Shadow Copy Information to text file.")
+		 ;$VS_PF_chk = GUICtrlCreateCheckbox("Collect Prefetch Files from VSCs", 10, 80)
+			;GUICtrlSetTip($VS_PF_chk, "Gather Prefetch files through Volume Shadow Copies for historical file execution analysis.")
+		 ;$VS_RF_chk = GUICtrlCreateCheckbox("Collect Recent Folder Files from VSCs", 10, 100)
+			;GUICtrlSetTip($VS_RF_chk, "Gather links for recent folder for each user in Volume Shadow Copies.")
+		 ;$VS_JmpLst_chk = GUICtrlCreateCheckbox("Collect JumpLists from VSCs", 10, 120)
+			;GUICtrlSetTip($VS_JmpLst_chk, "Gather Jump List information for each user from Volume Shadow Copies.")
+		 ;$VS_EvtCpy_chk = GUICtrlCreateCheckbox("Collect EventLogs from VSCs", 10, 140)
+			;GUICtrlSetTip($VS_EvtCpy_chk, "Collect Event Logs occuring through history with Volume Shadow Copies.")
+		 ;$VS_SYSREG_chk = GUICtrlCreateCheckbox("Collect SYSTEM hive from VSCs", 10, 160)
+			;GUICtrlSetTip($VS_SYSREG_chk, "Collect the SYSTEM registry hive through history with Volume Shadow Copies.")
+		 ;$VS_SECREG_chk = GUICtrlCreateCheckbox("Collect SECURITY hive from VSCs", 10, 180)
+			;GUICtrlSetTip($VS_SECREG_chk, "Collect the SECURITY registry hive through history with Volume Shadow Copies.")
+		 ;$VS_SAMREG_chk = GUICtrlCreateCheckbox("Collect SAM hive from VSCs", 10, 200)
+			;GUICtrlSetTip($VS_SAMREG_chk, "Collect the System Account Management registry hive through history with Volume Shadow Copies.")
+		 ;$VS_SOFTREG_chk = GUICtrlCreateCheckbox("Collect SOFTWARE hive from VSCs", 10, 220)
+			;GUICtrlSetTip($VS_SOFTREG_chk, "Collect the SOFTWARE registry hive through history with Volume Shadow Copies.")
+		 ;$VS_USERREG_chk = GUICtrlCreateCheckbox("Collect USER hives from VSCs", 400, 60)
+			;GUICtrlSetTip($VS_USERREG_chk, "Collect the NTUSER.dat registry hive through history with Volume Shadow Copies.")
 
 	  GUICtrlCreateTabItem("Options")
 
-		 $md5_chk = GUICtrlCreateCheckbox("Hash all collected files with MD5.", 10,30)
+		 $md5_chk = GUICtrlCreateCheckbox("Hash all collected files with MD5.", 10,90)
 			GUICtrlSetTip($md5_chk, "Use MD5DEEP to hash all gathered evidence items.")
-		 $sha1_chk = GUICtrlCreateCheckbox("Hash all collected files with SHA1.", 10, 50)
+		 $sha1_chk = GUICtrlCreateCheckbox("Hash all collected files with SHA1.", 10, 110)
 			GUICtrlSetTip($sha1_chk, "Use SHA1DEEP to hash all gathered evidence items.")
-		 $compress_chk = GUICtrlCreateCheckbox("Compress all of collected files and information in an archive.", 10, 70)
+		 $compress_chk = GUICtrlCreateCheckbox("Compress all of collected files and information in an archive.", 10, 130)
 			GUICtrlSetTip($compress_chk, "Use 7-zip to compress all collected evidence into one zipped archive.")
-		 $sysint_chk = GUICtrlCreateCheckbox("Add Registry Entry for SysInternals Suite.", 10, 90)
+		 $sysint_chk = GUICtrlCreateCheckbox("Add Registry Entry for SysInternals Suite.", 10, 150)
 			GUICtrlSetTip($sysint_chk, "Add registry entry to eliminate any risk of EULA stopping Sysinternals from running properly.")
 
 	  GUICtrlCreateTabItem("KPMG Customized Scripts")
-		 $AutorunVTEnabled_chk = GUICtrlCreateCheckbox("Autorun with VT", 10, 30)
+		 $AutorunVTEnabled_chk = GUICtrlCreateCheckbox("Autorun with VT", 10, 90)
 			GUICtrlSetTip($AutorunVTEnabled_chk, "Run Sysinternals autorunsc with Virustotal verification and driver signing")
-		 $ProcexpVTEnabled_chk = GUICtrlCreateCheckbox("Process Explorer with VT", 10, 50)
-			GUICtrlSetTip($AutorunVTEnabled_chk, "Run Sysinternals Process Explorer with Virustotal verification and driver signing")
-		 $dcInfo_chk = GUICtrlCreateCheckbox("Domain Controller Information", 10, 70)
-			GUICtrlSetTip($dcInfo_chk, "Get Domain Controller Information")
 
 	  GUICtrlCreateTabItem("") ; end tabitem definition
 
-	  $all = GUICtrlCreateButton("Select All", 480, 244, 80, 30)
+	  GUICtrlCreateLabel("Evidence Name:", 6, 8, 130)
+	  $evName = GUICtrlCreateInput("", 140, 5, 400, 24)
 
-	  $none = GUICtrlCreateButton("Select None", 570, 244, 80, 30)
+	  GUICtrlCreateLabel("Select Mounted E01:", 6, 33, 130)
+	  $Find = GUICtrlCreateInput("", 140, 33, 400, 24)
+	  $Browse = GUICtrlCreateButton("Browse", 555, 33, 115, 25)
 
-	  $run = GUICtrlCreateButton("Run", 755, 244, 50, 30)
+	  $all = GUICtrlCreateButton("Select All", 480, 290, 80, 30)
 
-	  $iniimage = GUICtrlCreatePic($image, 3, 242, 95 ,40)
+	  $none = GUICtrlCreateButton("Select None", 570, 290, 80, 30)
+
+	  $run = GUICtrlCreateButton("Run", 755, 290, 50, 30)
+
+	  $iniimage = GUICtrlCreatePic($image, 3, 285, 95 ,40)
 
 	  _Ini2GUI()
 
@@ -348,575 +254,353 @@ Func TriageGUI()						;Creates a graphical user interface for Triage
 
 		 If $msg = $GUI_EVENT_CLOSE Then ExitLoop
 
+		 If $msg = $Browse Then GUICtrlSetData($Find, Browse())
+
 		 If $msg = $run Then
-			;create directories to store evidence and results
-			If Not FileExists($RptsDir) Then DirCreate($RptsDir)
-			If Not FileExists($EvDir) Then DirCreate($EvDir)
-			If Not FileExists($BrowserDir) Then DirCreate($BrowserDir)
+			If GUICtrlRead($Find) <> "" And GUICtrlRead($evName) <> "" Then
+			   Global $evidenceName = GUICtrlRead($evName)
+			   Global $evidencePath = GUICtrlRead($Find)
+			   ;Reports Directory
+			   Global $RptsDir = @ScriptDir & "\" & $tStamp & " - " & $evidenceName & " Incident"
 
-			;create directories to store Tools. This should already exist with Sysinternals inside
-			If Not FileExists(@ScriptDir & "\Tools\") Then
-			   Do
-				  DirCreate(@ScriptDir & "\Tools\")
-			   Until FileExists(@ScriptDir & "\Tools\")
-			EndIf
+			   ;Evidence Directory
+			   Global $EvDir = $RptsDir & "\Evidence\"
 
-			;Running memdump
-			If (GUICtrlRead($MemDmp_chk) = 1) Then
-			   MemDump()
-			EndIf
+			   ;Browser Directory
+			   Global $BrowserDir = $RptsDir & "\Browser\"
 
-			If FileExists(@ScriptDir & '\Tools\SysinternalsSuite\') = 0 Then
-			   $sysintchk = MsgBox(0, "Missing Tools", "Missing the Sysinternals Toolset.")
-			   ExitLoop
-			EndIf
+			   ;Logs Directory
+			   Global $LogsDir = $RptsDir & "\Logs\"
 
-			   ;Create Triage Process bar
-			   $progGUI = GUICreate("Triage Progress", 250, 70, -1, -1, -1, BitOR($WS_EX_TOPMOST, $WS_EX_OVERLAPPEDWINDOW))
+			   Global $HashDir = $RptsDir & "\Evidence"
+			   Global $JmpLst = $EvDir & "Jump Lists"
+			   Global $Log = $RptsDir & "\Incident Log.txt"
+			   ;create directories to store evidence and results
+			   If Not FileExists($RptsDir) Then DirCreate($RptsDir)
+			   If Not FileExists($EvDir) Then DirCreate($EvDir)
+			   If Not FileExists($BrowserDir) Then DirCreate($BrowserDir)
+			   If Not FileExists($LogsDir) Then DirCreate($LogsDir)
 
-			   $progress = GUICtrlCreateProgress(10, 25, 230, 25)
+			   ;create directories to store Tools. This should already exist with Sysinternals inside
+			   If Not FileExists(@ScriptDir & "\Tools\") Then
+				  Do
+					 DirCreate(@ScriptDir & "\Tools\")
+				  Until FileExists(@ScriptDir & "\Tools\")
+			   EndIf
 
-			   ProgChkCount()
+			   If FileExists(@ScriptDir & '\Tools\SysinternalsSuite\') = 0 Then
+				  $sysintchk = MsgBox(0, "Missing Tools", "Missing the Sysinternals Toolset.")
+				  ExitLoop
+			   EndIf
 
-			   If (GUICtrlRead($MemDmp_chk) = 1) Then
-				  $fcnt = 1
+				  ;Create Triage Process bar
+				  $progGUI = GUICreate("Triage Progress", 250, 70, -1, -1, -1, BitOR($WS_EX_TOPMOST, $WS_EX_OVERLAPPEDWINDOW))
+
+				  $progress = GUICtrlCreateProgress(10, 25, 230, 25)
+
+				  ProgChkCount()
+
+				  If (GUICtrlRead($MemDmp_chk) = 1) Then
+					 $fcnt = 1
+					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+				  Else
+					 $fcnt = 0
+					 GUICtrlSetData($progress, 0)
+				  EndIf
+
+				  GUISetState(@SW_SHOW, $progGUI)
+
+			   If (GUICtrlRead($PF_chk) = 1) Then
+				  Prefetch()
+				  $fcnt = $fcnt + 1
 				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   Else
-				  $fcnt = 0
-				  GUICtrlSetData($progress, 0)
-			   EndIf
-
-			   GUISetState(@SW_SHOW, $progGUI)
-
-			If (GUICtrlRead($PF_chk) = 1) Then
-			   Prefetch()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($RF_chk) = 1) Then
-			   RecentFolder()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($JmpLst_chk) = 1) Then
-			   JumpLists()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($PF_Target_chk) = 1) Then
-			   Prefetch_Target()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($RF_Target_chk) = 1) Then
-			   RecentFolder_Target()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($JmpLst_Target_chk) = 1) Then
-			   JumpLists_Target()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($SYSTEM_chk) = 1) Then
-			   SystemRRip()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($SOFTWARE_chk) = 1) Then
-			   SoftwareRRip()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($HKCU_chk) = 1) Then
-			   HKCURRip()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
-
-			If (GUICtrlRead($HKU_chk) = 1) Then
-			   NTUserRRip()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($UsrC_chk) = 1) Then
-			   UsrclassE()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($SECURITY_chk) = 1) Then
-			   SecurityRRip()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($SAM_chk) = 1) Then
-			   SAMRRip()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($MFTg_chk) = 1) Then
-			   MFTgrab()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			;ZF Added
-			If (GUICtrlRead($AutorunVTEnabled_chk) = 1) Then
-			   ;Function to call
-			   AutorunVTEnabled()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($ProcexpVTEnabled_chk) = 1) Then
-			   ProcexpVTEnabled()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($dcInfo_chk) = 1) Then
-			   dcInfo()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($VS_info_chk) = 1) Then
-			   VSC_Info()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			VSC_ChkCount()
-
-			If $r_chk >= 1 Then
-			   GetShadowNames()
-			   Sleep(6000)
-			   MountVSCs()
-			   Sleep(6000)
-
-			   ;Checks if VSCs were previously mounted everytime program is run
-			   If FileExists("C:\VSC_" & $firstMountedVersion) = 1 Then
-
-				  If (GUICtrlRead($VS_PF_chk) = 1) Then
-					 VSC_Prefetch()
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 				  EndIf
 
-				  If (GUICtrlRead($VS_RF_chk) = 1) Then
-					 VSC_RecentFolder()
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($RF_chk) = 1) Then
+				  RecentFolder()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 				  EndIf
 
-				  If (GUICtrlRead($VS_JmpLst_chk) = 1) Then
-					 VSC_JumpLists()
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($JmpLst_chk) = 1) Then
+				  JumpLists()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($PF_Target_chk) = 1) Then
+				  Prefetch_Target()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($RF_Target_chk) = 1) Then
+				  RecentFolder_Target()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($JmpLst_Target_chk) = 1) Then
+				  JumpLists_Target()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($SYSTEM_chk) = 1) Then
+				  SystemRRip()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($SOFTWARE_chk) = 1) Then
+				  SoftwareRRip()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($HKCU_chk) = 1) Then
+				  HKCURRip()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($HKU_chk) = 1) Then
+				  NTUserRRip()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($UsrC_chk) = 1) Then
+				  UsrclassE()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($SECURITY_chk) = 1) Then
+				  SecurityRRip()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($SAM_chk) = 1) Then
+				  SAMRRip()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($MFTg_chk) = 1) Then
+				  MFTgrab()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   ;ZF Added
+			   If (GUICtrlRead($AutorunVTEnabled_chk) = 1) Then
+				  ;Function to call
+				  AutorunVTEnabled()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   If (GUICtrlRead($VS_info_chk) = 1) Then
+				  VSC_Info()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   EndIf
+
+			   VSC_ChkCount()
+
+			   If $r_chk >= 1 Then
+				  GetShadowNames()
+				  Sleep(6000)
+				  MountVSCs()
+				  Sleep(6000)
+
+				  ;Checks if VSCs were previously mounted everytime program is run
+				  If FileExists("C:\VSC_" & $firstMountedVersion) = 1 Then
+
+					 If (GUICtrlRead($VS_PF_chk) = 1) Then
+						VSC_Prefetch()
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_RF_chk) = 1) Then
+						VSC_RecentFolder()
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_JmpLst_chk) = 1) Then
+						VSC_JumpLists()
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_EvtCpy_chk) = 1) Then
+						VSC_EvtCopy()
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_SYSREG_chk) = 1) Then
+						VSC_RegHiv("SYSTEM")
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_SECREG_chk) = 1) Then
+						VSC_RegHiv("SECURITY")
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_SAMREG_chk) = 1) Then
+						VSC_RegHiv("SAM")
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_SOFTREG_chk) = 1) Then
+						VSC_RegHiv("SOFTWARE")
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+					 If (GUICtrlRead($VS_USERREG_chk) = 1) Then
+						VSC_NTUser()
+						$fcnt = $fcnt + 1
+						GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+					 EndIf
+
+				  Else
+					 MsgBox(11, "VSC", "Problem with Volume Shadow Mounts")
+					 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Failed to execute Volume Shadow Copy Functions." & @CRLF)
 				  EndIf
-
-				  If (GUICtrlRead($VS_EvtCpy_chk) = 1) Then
-					 VSC_EvtCopy()
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-				  EndIf
-
-				  If (GUICtrlRead($VS_SYSREG_chk) = 1) Then
-					 VSC_RegHiv("SYSTEM")
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-				  EndIf
-
-				  If (GUICtrlRead($VS_SECREG_chk) = 1) Then
-					 VSC_RegHiv("SECURITY")
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-				  EndIf
-
-				  If (GUICtrlRead($VS_SAMREG_chk) = 1) Then
-					 VSC_RegHiv("SAM")
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-				  EndIf
-
-				  If (GUICtrlRead($VS_SOFTREG_chk) = 1) Then
-					 VSC_RegHiv("SOFTWARE")
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-				  EndIf
-
-				  If (GUICtrlRead($VS_USERREG_chk) = 1) Then
-					 VSC_NTUser()
-					 $fcnt = $fcnt + 1
-					 GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-				  EndIf
-
-			   Else
-				  MsgBox(11, "VSC", "Problem with Volume Shadow Mounts")
-				  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Failed to execute Volume Shadow Copy Functions." & @CRLF)
-			   EndIf
-			EndIf
-
-			If $r_chk >= 1 Then
-			   VSC_rmVSC()
-			EndIf
-
-			If (GUICtrlRead($sysint_chk) = 1) Then
-			   SysIntAdd()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($IPs_chk) = 1) Then
-			   IPs()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If $r_chk >= 1 Then
+				  VSC_rmVSC()
 			   EndIf
 
-			If (GUICtrlRead($DNS_chk) = 1) Then
-			   DNS()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($sysint_chk) = 1) Then
+				  SysIntAdd()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($ARP_chk) = 1) Then
-			   Arp()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($AutoRun_chk) = 1) Then
+				  AutoRun()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($NBT_chk) = 1) Then
-			   NetBIOS()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($AutoRun_Target_chk) = 1) Then
+				  AutoRun_Target()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Routes_chk) = 1) Then
-			   Routes()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($srum_chk) = 1) Then
+				  Srum()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($CONN_chk) = 1) Then
-			   Connections()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+
+			   If (GUICtrlRead($NTFSInfo_chk) = 1) Then
+				  NTFSInfo()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Sessions_chk) = 1) Then
-			   ConnectedSessions()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($VolInfo_chk) = 1) Then
+				  VolInfo()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($nShare_chk) = 1) Then
-			   Shares()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($Tree_chk) = 1) Then
+				  Directory()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($nFiles_chk) = 1) Then
-			   SharedFiles()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($EvtCpy_chk) = 1) Then
+				  EvtCopy()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($WrkgrpPC_chk) = 1) Then
-			   Workgroups()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($md5_chk) = 1) Then
+				  MD5()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Sys_chk) = 1) Then
-			   SystemInfo()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($sha1_chk) = 1) Then
+				  SHA1()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Proc_chk) = 1) Then
-			   Processes()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($compress_chk) = 1) Then
+				  Compression()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Serv_chk) = 1) Then
-			   Services()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_cache_chk) = 1) Then
+				  bwsr_cache()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($AcctInfo_chk) = 1) Then
-			   AccountInfo()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($UsrInfo_chk) = 1) Then
-			   UsrInfo()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($AutoRun_chk) = 1) Then
-			   AutoRun()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($AutoRun_Target_chk) = 1) Then
-			   AutoRun_Target()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($STsk_chk) = 1) Then
-			   ScheduledTasks()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($srum_chk) = 1) Then
-			   Srum()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($FileAssoc_chk) = 1) Then
-			   FileAssociation()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_hist_chk) = 1) Then
+				  bwsr_hist()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Host_chk) = 1) Then
-			   Hostname()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_fav_chk) = 1) Then
+				  bwsr_fav()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($NTFSInfo_chk) = 1) Then
-			   NTFSInfo()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($VolInfo_chk) = 1) Then
-			   VolInfo()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_cookies_chk) = 1) Then
+				  bwsr_cookies()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($DiskMnt_chk) = 1) Then
-			   MountedDisk()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_dl_chk) = 1) Then
+				  bwsr_dl()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($Tree_chk) = 1) Then
-			   Directory()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_autocomplete_chk) = 1) Then
+				  bwsr_autocomplete()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($EvtCpy_chk) = 1) Then
-			   EvtCopy()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   If (GUICtrlRead($bwsr_webcache_chk) = 1) Then
+				  bwsr_webcache()
+				  $fcnt = $fcnt + 1
+				  GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
 			   EndIf
 
-			If (GUICtrlRead($md5_chk) = 1) Then
-			   MD5()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
+			   GUIDelete($progGUI)
 
-			If (GUICtrlRead($sha1_chk) = 1) Then
-			   SHA1()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			   EndIf
+			   CommandROSLOG()
 
-			If (GUICtrlRead($compress_chk) = 1) Then
-			   Compression()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
+			   MsgBox(0, "Triage:  Incident Response", "Your selected tasks have completed.")
+			Else
+			   MsgBox(0, "Error", "Please make sure all fields are filled!")
 			EndIf
-
-			If (GUICtrlRead($wmi_tz_chk) = 1) Then
-			   wmi_tz()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_usr_chk) = 1) Then
-			   wmi_usr()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_model_chk) = 1) Then
-			   wmi_model()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_warranty_chk) = 1) Then
-			   wmi_warranty()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_nic_chk) = 1) Then
-			   wmi_nic()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_manu_chk) = 1) Then
-			   wmi_manu()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_software_chk) = 1) Then
-			   wmi_software()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_evt_chk) = 1) Then
-			   wmi_evt()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_proc_chk) = 1) Then
-			   wmi_proc()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_job_chk) = 1) Then
-			   wmi_job()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_startup_chk) = 1) Then
-			   wmi_startup()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_domain_chk) = 1) Then
-			   wmi_domain()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_service_chk) = 1) Then
-			   wmi_service()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_bios_chk) = 1) Then
-			   wmi_bios()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_hd_chk) = 1) Then
-			   wmi_hd()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_share_chk) = 1) Then
-			   wmi_share()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_hotfix_chk) = 1) Then
-			   wmi_hotfix()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($wmi_prodkey_chk) = 1) Then
-			   wmi_prodkey()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_cache_chk) = 1) Then
-			   bwsr_cache()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_hist_chk) = 1) Then
-			   bwsr_hist()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_fav_chk) = 1) Then
-			   bwsr_fav()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_cookies_chk) = 1) Then
-			   bwsr_cookies()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_dl_chk) = 1) Then
-			   bwsr_dl()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_autocomplete_chk) = 1) Then
-			   bwsr_autocomplete()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_webcache_chk) = 1) Then
-			   bwsr_webcache()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			If (GUICtrlRead($bwsr_password_chk) = 1) Then
-			   bwsr_password()
-			   $fcnt = $fcnt + 1
-			   GUICtrlSetData($progress, (($fcnt/$p_chkc)*100))
-			EndIf
-
-			GUIDelete($progGUI)
-
-			CommandROSLOG()
-
-			MsgBox(0, "Triage:  Incident Response", "Your selected tasks have completed.")
-
 		 EndIf
-
 	  WEnd
 
    GUIDelete()
@@ -945,7 +629,6 @@ Func INI_Check($ini_file)				;Check the INI file included in triage for function
    ;ZF added
    Global	$AutorunVTEnabled_ini, $ProcexpVTEnabled_ini
    Global	$dcInfo_ini
-   Global	$wmi_tz_ini, $wmi_usr_ini, $wmi_model_ini, $wmi_hotfix_ini, $wmi_warranty_ini, $wmi_nic_ini, $wmi_manu_ini, $wmi_software_ini, $wmi_evt_ini, $wmi_proc_ini, $wmi_job_ini, $wmi_startup_ini, $wmi_domain_ini, $wmi_service_ini, $wmi_bios_ini, $wmi_hd_ini, $wmi_share_ini, $wmi_prodkey_ini
    Global	$bwsr_cache_ini, $bwsr_hist_ini, $bwsr_fav_ini, $bwsr_cookies_ini, $bwsr_dl_ini, $bwsr_autocomplete_ini, $bwsr_webcache_ini, $bwsr_password_ini
 
    $GUI_ini = IniRead($ini_file, "GUI", "GUI", "Yes")
@@ -971,18 +654,6 @@ Func INI_Check($ini_file)				;Check the INI file included in triage for function
    $VS_SOFTREG_ini = IniRead($ini_file, "Function", "VSsoftware", "No")
    $VS_USERREG_ini = IniRead($ini_file, "Function", "VSuserreg", "No")
    $SysIntAdd_ini = IniRead($ini_file, "Function", "SysIntAdd", "Yes")
-   $IPs_ini = IniRead($ini_file, "Function", "IPs", "Yes")
-   $DNS_ini = IniRead($ini_file, "Function", "DNS", "Yes")
-   $Arp_ini = IniRead($ini_file, "Function", "Arp", "Yes")
-   $ConnS_ini = IniRead($ini_file, "Function", "ConnectedSessions", "Yes")
-   $routes_ini = IniRead($ini_file, "Function", "Routes", "Yes")
-   $ntBIOS_ini = IniRead($ini_file, "Function", "NetBios", "Yes")
-   $conn_ini = IniRead($ini_file, "Function", "Connections", "Yes")
-   $share_ini = IniRead($ini_file, "Function", "Shares", "Yes")
-   $shfile_ini = IniRead($ini_file, "Function", "SharedFiles", "Yes")
-   $fw_ini = IniRead($ini_file, "Function", "Firewall", "Yes")
-   $host_ini = IniRead($ini_file, "Function", "Hosts", "Yes")
-   $wrkgrp_ini = IniRead($ini_file, "Function", "Workgroups", "Yes")
    $pf_ini = IniRead($ini_file, "Function", "Prefetch", "Yes")
    $rf_ini = IniRead($ini_file, "Function", "RecentFolder", "Yes")
    $JL_ini = IniRead($ini_file, "Function", "JumpLists", "Yes")
@@ -990,13 +661,6 @@ Func INI_Check($ini_file)				;Check the INI file included in triage for function
    $rf_target_ini = IniRead($ini_file, "Function", "RecentFolderTarget", "Yes")
    $JL_target_ini = IniRead($ini_file, "Function", "JumpListsTarget", "Yes")
    $evt_ini = IniRead($ini_file, "Function", "EvtCopy", "Yes")
-   $proc_ini = IniRead($ini_file, "Function", "Processes", "Yes")
-   $sysinf_ini = IniRead($ini_file, "Function", "SystemInfo", "Yes")
-   $srvs_ini = IniRead($ini_file, "Function", "Services", "Yes")
-   $fassoc_ini = IniRead($ini_file, "Function", "FileAssociations", "Yes")
-   $acctinfo_ini = IniRead($ini_file, "Function", "AccoutInfo", "Yes")
-   $hostn_ini = IniRead($ini_file, "Function", "Hostname", "Yes")
-   $UsrInfo_ini = IniRead($ini_file, "Function", "UserInfo", "Yes")
    $srum_ini = IniRead($ini_file, "Function", "SRUM", "Yes")
    $autorun_ini = IniRead($ini_file, "Function", "AutoRun", "Yes")
    $AutoRun_Target_ini = IniRead($ini_file, "Function", "AutoRunTarget", "Yes")
@@ -1004,7 +668,6 @@ Func INI_Check($ini_file)				;Check the INI file included in triage for function
    $logon_ini = IniRead($ini_file, "Function", "LoggedOn", "Yes")
    $NTFS_ini = IniRead($ini_file, "Function", "NTFSInfo", "Yes")
    $VolInfo_ini = IniRead($ini_file, "Function", "VolumeInfo", "Yes")
-   $mntdsk_ini = IniRead($ini_file, "Function", "MountedDisk", "Yes")
    $dir_ini = IniRead($ini_file, "Function", "Directory", "Yes")
    $md5_ini = IniRead($ini_file, "Function", "MD5", "Yes")
    $sha1_ini = IniRead($ini_file, "Function", "SHA1", "Yes")
@@ -1012,27 +675,6 @@ Func INI_Check($ini_file)				;Check the INI file included in triage for function
 
    ;ZF added
    $AutorunVTEnabled_ini= IniRead($ini_file, "Function", "AutorunVTEnabled", "No")
-   $ProcexpVTEnabled_ini= IniRead($ini_file, "Function", "ProcexpVTEnabled", "No")
-   $dcInfo_ini= IniRead($ini_file, "Function", "DCInfo", "No")
-   $wmi_tz_ini = IniRead($ini_file, "Function", "wmiTimezone", "Yes")
-   $wmi_usr_ini = IniRead($ini_file, "Function", "wmiUserInfo", "Yes")
-   $wmi_model_ini = IniRead($ini_file, "Function", "wmiModel", "Yes")
-   $wmi_warranty_ini = IniRead($ini_file, "Function", "wmiWarranty", "Yes")
-   $wmi_nic_ini = IniRead($ini_file, "Function", "wmiNic", "Yes")
-   $wmi_manu_ini = IniRead($ini_file, "Function", "wmiManufacture", "Yes")
-   $wmi_software_ini = IniRead($ini_file, "Function", "wmiSoftware", "Yes")
-   $wmi_evt_ini = IniRead($ini_file, "Function", "wmiEvents", "Yes")
-   $wmi_proc_ini = IniRead($ini_file, "Function", "wmiProcesses", "Yes")
-   $wmi_job_ini = IniRead($ini_file, "Function", "wmiJob", "Yes")
-   $wmi_startup_ini = IniRead($ini_file, "Function", "wmiStartup", "Yes")
-   $wmi_domain_ini = IniRead($ini_file, "Function", "wmiDomain", "Yes")
-   $wmi_service_ini = IniRead($ini_file, "Function", "wmiService", "Yes")
-   $wmi_bios_ini = IniRead($ini_file, "Function", "wmiBios", "Yes")
-   $wmi_hd_ini = IniRead($ini_file, "Function", "wmiHarddrive", "Yes")
-   $wmi_share_ini = IniRead($ini_file, "Function", "wmiShare", "Yes")
-   $wmi_hotfix_ini = IniRead($ini_file, "Function", "wmiHotfix", "Yes")
-   $wmi_prodkey_ini = IniRead($ini_file, "Function", "wmiProdkey", "Yes")
-
    $bwsr_cache_ini = IniRead($ini_file, "Function", "browserCache", "Yes")
    $bwsr_hist_ini = IniRead($ini_file, "Function", "browserHistory", "Yes")
    $bwsr_fav_ini = IniRead($ini_file, "Function", "browserFav", "Yes")
@@ -1051,34 +693,10 @@ Func _Ini2GUI()							;Correlate the INI into checking the boxes of the GUI to e
 	  GUICtrlSetState($Sys_chk, $GUI_UNCHECKED)
    EndIf
 
-   If $proc_ini = "Yes" Then
-	  GUICtrlSetState($Proc_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($Proc_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $srvs_ini = "Yes" Then
-	  GUICtrlSetState($Serv_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($Serv_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $fassoc_ini = "Yes" Then
-	  GUICtrlSetState($FileAssoc_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($FileAssoc_chk, $GUI_UNCHECKED)
-   EndIf
-
    If $st_ini = "Yes" Then
 	  GUICtrlSetState($STsk_chk, $GUI_CHECKED)
    Else
 	  GUICtrlSetState($STsk_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $hostn_ini = "Yes" Then
-	  GUICtrlSetState($Host_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($Host_chk, $GUI_UNCHECKED)
    EndIf
 
    If $autorun_ini = "Yes" Then
@@ -1093,82 +711,10 @@ Func _Ini2GUI()							;Correlate the INI into checking the boxes of the GUI to e
 	  GUICtrlSetState($AutoRun_Target_chk, $GUI_UNCHECKED)
    EndIf
 
-   If $acctinfo_ini = "Yes" Then
-	  GUICtrlSetState($AcctInfo_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($AcctInfo_chk, $GUI_UNCHECKED)
-   EndIf
-
    If $srum_ini = "Yes" Then
 	  GUICtrlSetState($srum_chk, $GUI_CHECKED)
    Else
 	  GUICtrlSetState($srum_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $UsrInfo_ini = "Yes" Then
-	  GUICtrlSetState($UsrInfo_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($UsrInfo_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $IPs_ini = "Yes" Then
-	  GUICtrlSetState($IPs_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($IPs_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $conn_ini = "Yes" Then
-	  GUICtrlSetState($CONN_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($CONN_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $routes_ini = "Yes" Then
-	  GUICtrlSetState($Routes_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($Routes_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $Arp_ini = "Yes" Then
-	  GUICtrlSetState($ARP_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($ARP_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $DNS_ini = "Yes" Then
-	  GUICtrlSetState($DNS_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($DNS_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $ntBIOS_ini = "Yes" Then
-	  GUICtrlSetState($NBT_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($NBT_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $share_ini = "Yes" Then
-	  GUICtrlSetState($nShare_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($nShare_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $shfile_ini = "Yes" Then
-	  GUICtrlSetState($nFiles_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($nFiles_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $Conns_ini = "Yes" Then
-	  GUICtrlSetState($Sessions_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($Sessions_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wrkgrp_ini = "Yes" Then
-	  GUICtrlSetState($WrkgrpPC_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($WrkgrpPC_chk, $GUI_UNCHECKED)
    EndIf
 
    If $sysrrp_ini = "Yes" Then
@@ -1219,12 +765,6 @@ Func _Ini2GUI()							;Correlate the INI into checking the boxes of the GUI to e
 	  GUICtrlSetState($UsrC_chk, $GUI_UNCHECKED)
    EndIf
 
-   If $mntdsk_ini = "Yes" Then
-	  GUICtrlSetState($DiskMnt_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($DiskMnt_chk, $GUI_UNCHECKED)
-   EndIf
-
    If $dir_ini = "Yes" Then
 	  GUICtrlSetState($Tree_chk, $GUI_CHECKED)
    Else
@@ -1259,12 +799,6 @@ Func _Ini2GUI()							;Correlate the INI into checking the boxes of the GUI to e
 	  GUICtrlSetState($compress_chk, $GUI_CHECKED)
    Else
 	  GUICtrlSetState($compress_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $md_ini = "Yes" Then
-	  GUICtrlSetState($MemDmp_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($MemDmp_chk, $GUI_UNCHECKED)
    EndIf
 
    If $pf_ini = "Yes" Then
@@ -1381,126 +915,6 @@ Func _Ini2GUI()							;Correlate the INI into checking the boxes of the GUI to e
 	  GUICtrlSetState($AutorunVTEnabled_chk, $GUI_UNCHECKED)
    EndIf
 
-   If $ProcexpVTEnabled_ini = "Yes" Then
-	  GUICtrlSetState($ProcexpVTEnabled_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($ProcexpVTEnabled_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $dcInfo_ini = "Yes" Then
-	  GUICtrlSetState($dcInfo_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($dcInfo_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_tz_ini = "Yes" Then
-	  GUICtrlSetState($wmi_tz_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_tz_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_usr_ini = "Yes" Then
-	  GUICtrlSetState($wmi_usr_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_usr_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_model_ini = "Yes" Then
-	  GUICtrlSetState($wmi_model_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_model_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_warranty_ini = "Yes" Then
-	  GUICtrlSetState($wmi_warranty_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_warranty_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_nic_ini = "Yes" Then
-	  GUICtrlSetState($wmi_nic_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_nic_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_manu_ini = "Yes" Then
-	  GUICtrlSetState($wmi_manu_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_manu_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_software_ini = "Yes" Then
-	  GUICtrlSetState($wmi_software_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_software_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_evt_ini = "Yes" Then
-	  GUICtrlSetState($wmi_evt_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_evt_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_proc_ini = "Yes" Then
-	  GUICtrlSetState($wmi_proc_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_proc_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_job_ini = "Yes" Then
-	  GUICtrlSetState($wmi_job_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_job_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_startup_ini = "Yes" Then
-	  GUICtrlSetState($wmi_startup_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_startup_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_domain_ini = "Yes" Then
-	  GUICtrlSetState($wmi_domain_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_domain_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_service_ini = "Yes" Then
-	  GUICtrlSetState($wmi_service_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_service_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_bios_ini = "Yes" Then
-	  GUICtrlSetState($wmi_bios_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_bios_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_hd_ini = "Yes" Then
-	  GUICtrlSetState($wmi_hd_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_hd_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_share_ini = "Yes" Then
-	  GUICtrlSetState($wmi_share_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_share_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_hotfix_ini = "Yes" Then
-	  GUICtrlSetState($wmi_hotfix_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_hotfix_chk, $GUI_UNCHECKED)
-   EndIf
-
-   If $wmi_prodkey_ini = "Yes" Then
-	  GUICtrlSetState($wmi_prodkey_chk, $GUI_CHECKED)
-   Else
-	  GUICtrlSetState($wmi_prodkey_chk, $GUI_UNCHECKED)
-   EndIf
-
    If $bwsr_cache_ini = "Yes" Then
 	  GUICtrlSetState($bwsr_cache_chk, $GUI_CHECKED)
    Else
@@ -1555,8 +969,6 @@ Func INI2Command()						;Correlate the INI file into executing the selected func
 
    If Not FileExists($RptsDir) Then DirCreate($RptsDir)
    If Not FileExists($EvDir) Then DirCreate($EvDir)
-
-   If $md_ini = "Yes" Then MemDump()
 
    If $pf_ini = "Yes" Then Prefetch()
 
@@ -1624,53 +1036,15 @@ Func INI2Command()						;Correlate the INI file into executing the selected func
 
    If $SysIntAdd_ini = "Yes" Then SysIntAdd()
 
-   If $IPs_ini = "Yes" Then IPs()
-
-   If $DNS_ini = "Yes" Then DNS()
-
-   If $Arp_ini = "Yes" Then Arp()
-
-   If $ntBIOS_ini = "Yes" Then NetBIOS()
-
-   If $routes_ini = "Yes" Then Routes()
-
-   If $conn_ini = "Yes" Then Connections()
-
-   If $Conns_ini = "Yes" Then ConnectedSessions()
-
-   If $share_ini = "Yes" Then Shares()
-
-   If $shfile_ini = "Yes" Then SharedFiles()
-
-   If $wrkgrp_ini = "Yes" Then Workgroups()
-
-   If $sysinf_ini = "Yes" Then SystemInfo()
-
-   If $proc_ini = "Yes" Then Processes()
-
-   If $srvs_ini = "Yes" Then Services()
-
-   If $acctinfo_ini = "Yes" Then AccountInfo()
-
    If $autorun_ini = "Yes" Then AutoRun()
 
    If $AutoRun_Target_ini = "Yes" Then AutoRun_Target()
 
    If $srum_ini = "Yes" Then Srum()
 
-   If $st_ini = "Yes" Then ScheduledTasks()
-
-   If $fassoc_ini = "Yes" Then FileAssociation()
-
-   If $hostn_ini = "Yes" Then Hostname()
-
-   If $UsrInfo_ini = "Yes" Then UsrInfo()
-
    If $NTFS_ini = "Yes" Then NTFSInfo()
 
    If $VolInfo_ini = "Yes" Then VolInfo()
-
-   If $mntdsk_ini = "Yes" Then MountedDisk()
 
    If $dir_ini = "Yes" Then Directory()
 
@@ -1683,46 +1057,6 @@ Func INI2Command()						;Correlate the INI file into executing the selected func
    If $compress_ini = "Yes" Then Compression()
 
    If $AutorunVTEnabled_ini = "Yes" Then AutorunVTEnabled()
-
-   If $ProcexpVTEnabled_ini = "Yes" Then ProcexpVTEnabled()
-
-   If $dcInfo_ini = "Yes" Then dcInfo()
-
-   If $wmi_tz_ini = "Yes" Then wmi_tz()
-
-   If $wmi_usr_ini = "Yes" Then wmi_usr()
-
-   If $wmi_model_ini = "Yes" Then wmi_model()
-
-   If $wmi_warranty_ini = "Yes" Then wmi_warranty()
-
-   If $wmi_nic_ini = "Yes" Then wmi_nic()
-
-   If $wmi_manu_ini = "Yes" Then wmi_manu()
-
-   If $wmi_software_ini = "Yes" Then wmi_software()
-
-   If $wmi_evt_ini = "Yes" Then wmi_evt()
-
-   If $wmi_proc_ini = "Yes" Then wmi_proc()
-
-   If $wmi_job_ini = "Yes" Then wmi_job()
-
-   If $wmi_startup_ini = "Yes" Then wmi_startup()
-
-   If $wmi_domain_ini = "Yes" Then wmi_domain()
-
-   If $wmi_service_ini = "Yes" Then wmi_service()
-
-   If $wmi_bios_ini = "Yes" Then wmi_bios()
-
-   If $wmi_hd_ini = "Yes" Then wmi_hd()
-
-   If $wmi_share_ini = "Yes" Then wmi_share()
-
-   If $wmi_hotfix_ini = "Yes" Then wmi_hotfix()
-
-   If $wmi_prodkey_ini = "Yes" Then wmi_prodkey()
 
    If $bwsr_cache_ini = "Yes" Then bwsr_cache()
 
@@ -1738,235 +1072,56 @@ Func INI2Command()						;Correlate the INI file into executing the selected func
 
    If $bwsr_webcache_ini = "Yes" Then bwsr_webcache()
 
-   If $bwsr_password_ini = "Yes" Then bwsr_password()
-
    CommandROSLOG()
 
 ;   MsgBox(0, "Triage:  Incident Response", "Your selected tasks have completed.")
 
 EndFunc
 
-Func MemDump()							;Special thanks to MoonSols for an amazing tool for memory captures
+Func Browse()
+    ; Create a constant variable in Local scope of the message to display in FileOpenDialog.
+    Local Const $Message = "Select Mounted Evidence File"
 
-   ;MsgBox(0, "DEBUG", "Starting MemDump")
+    ; Display an open dialog to select a list of file(s).
+    Local $Browse = FileSelectFolder($Message, "")
+    If @error Then
+        ; Display the error message.
 
-   $windd = "DumpIt.exe" ;The memory dump executable, we are currently using moonsol DumpIt.exe
+        ; Change the working directory (@WorkingDir) back to the location of the script directory as FileOpenDialog sets it to the last accessed folder.
+        FileChangeDir(@ScriptDir)
+    Else
+        ; Change the working directory (@WorkingDir) back to the location of the script directory as FileOpenDialog sets it to the last accessed folder.
+        FileChangeDir(@ScriptDir)
 
-   ;Moving DumpIt to Evidence Folder
-   FileMove(".\Tools\DumpIt.exe",$EvDir)
+        ; Replace instances of "|" with @CRLF in the string returned by FileOpenDialog.
+        $Browse = StringReplace($Browse, "|", @CRLF)
 
-   ShellExecute($windd, "", $EvDir )
+    return $browse  ; <----------------------------------------
+    ;MsgBox(0, "", $Browse)
 
-   ;Moving DumpIt to back to Tools folder
-   FileMove($EvDir & "DumpIt.exe", ".\Tools")
+    EndIf
 
-   ;Waiting for user input. If DumpIt.exe is running, the countdown is stopped.
-   Sleep(4500)
-
-   ProcessClose($windd)
-
-   	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $windd & @CRLF)
-
-   ProcessWaitClose($windd)
-
-EndFunc
-
-Func Processes()						;Gather running process information
-   Local $proc1 = $shellex & ' tasklist /svc > "' & $RptsDir & '\Processes.txt"'
-   Local $proc2 = $shellex & ' tasklist /m > "' & $RptsDir & '\Processes.txt"'
-   Local $proc3 = $shellex & ' .\Tools\SysinternalsSuite\pslist -accepteula >> "' & $RptsDir & '\Processes.txt"'
-   Local $proc4 = $shellex & ' .\Tools\SysinternalsSuite\pslist -t -accepteula >> "' & $RptsDir & '\Processes.txt"'
-
-   RunWait($proc1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $proc1 & @CRLF)
-   RunWait($proc2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $proc2 & @CRLF)
-   RunWait($proc3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $proc3 & @CRLF)
-   RunWait($proc4, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $proc3 & @CRLF)
-EndFunc
-
-Func IPs()								;Gather network address for the computer
-   Local $ip1 = $shellex & ' ipconfig /all > "' & $RptsDir & '\IP Info.txt"'
-   Local $ip2 = $shellex & ' netsh int ip show config >> "' & $RptsDir & '\IP Info.txt"'
-
-   RunWait($ip1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $ip1 & @CRLF)
-   RunWait($ip2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $ip2 & @CRLF)
-EndFunc
-
-Func Connections()						;Discover any network connections on the PC
-   Local $Conn1 = $shellex & ' netstat -nao > "' & $RptsDir & '\Network Connections.txt"'
-   Local $Conn2 = $shellex & ' netstat -naob >> "' & $RptsDir & '\Network Connections.txt"'
-
-   RunWait($Conn1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $Conn1 & @CRLF)
-   RunWait($Conn2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $Conn2 & @CRLF)
-EndFunc
-
-Func Routes()							;Gather list of active routes
-   Local $route1 = $shellex & ' route PRINT > "' & $RptsDir & '\Routes.txt"'
-   Local $route2 = $shellex & ' netstat -r >> "' & $RptsDir & '\Routes.txt"'
-   RunWait($route1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $route1 & @CRLF)
-   RunWait($route2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $route2 & @CRLF)
-EndFunc
-
-Func UsrInfo()							;Gather list of user accounts
-   Local $usrinfo = $shellex & ' net user > "' & $RptsDir & '\User Account Information.txt"'
-   RunWait($usrinfo, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $usrinfo & @CRLF)
-EndFunc
-
-Func NetBIOS()							;Get NetBIOS information
-   Local $nbt1 = @ComSpec & ' /c nbtstat -A 127.0.0.1 > "' & $RptsDir & '\NBTstat.txt"'
-   Local $nbt2 = @ComSpec & ' /c nbtstat -a ' & $compName & ' >> "' & $RptsDir & '\NBTstat.txt"'
-
-   RunWait($nbt1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $nbt1 & @CRLF)
-
-   RunWait($nbt2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $nbt2 & @CRLF)
-EndFunc
-
-Func Arp()								;Gather information regarding ARP
-   Local $arp1 = $shellex & ' arp -a > "' & $RptsDir & '\ARP Info.txt"'
-
-   RunWait($arp1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $arp1 & @CRLF)
-EndFunc
-
-Func DNS()								;Gather DNS information
-   Local $dns1 = $shellex & ' ipconfig /displaydns > "' & $RptsDir & '\DNS Info.txt"'
-   Local $dns2 = $shellex & ' nslookup host server >> "' & $RptsDir & '\DNS Info.txt"'
-
-   RunWait($dns1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $dns1 & @CRLF)
-   RunWait($dns2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $dns2 & @CRLF)
-EndFunc
-
-Func Shares()							;Gather information on any shared folders
-   Local $share1 = $shellex & ' net share > "' & $RptsDir & '\LocalShares.txt"'
-
-   RunWait($share1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $share1 & @CRLF)
-EndFunc
-
-Func SharedFiles()						;Gather information on any shared files
-   Local $sfile1 = $shellex & ' net file > "' & $RptsDir & '\Open Shared Files.txt"'
-
-   RunWait($sfile1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $sfile1 & @CRLF)
-EndFunc
-
-Func ConnectedSessions()				;Gather information on any connected sessions
-   Local $ConnSes = $shellex & ' net Session > "' & $RptsDir & '\Sessions.txt"'
-
-   RunWait($ConnSes, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $ConnSes & @CRLF)
-EndFunc
-
-Func Firewall()							;Get the firewall information
-   Local $fw1 = $shellex & ' netsh firewall show state > "' & $RptsDir & '\Firewall Config.txt"'
-   Local $fw2 = $shellex & ' netsh advfirewall show allprofiles >> "' & $RptsDir & '\Firewall Config.txt"'
-
-   RunWait($fw1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $fw1 & @CRLF)
-   RunWait($fw2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $fw2 & @CRLF)
-EndFunc
-
-Func Hosts()							;Gather the HOST file
-   Local $host1 = $shellex & ' type %systemroot%\System32\Drivers\etc\hosts > "' & $RptsDir & '\Hosts Info.txt"'
-
-   RunWait($host1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $host1 & @CRLF)
-EndFunc
-
-Func Workgroups()						;Gather possible information on PC Workgroups
-   Local $sVar = RegRead("HKLM\System\CurrentControlSet\Services\Tcpip\Parameters", "Domain")
-   Local $wkgrp1 = $shellex & ' net view ' & $sVar & ' > "' & $RptsDir & '\Workgroup PC Information.txt"'
-
-   RunWait($wkgrp1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wkgrp1 & @CRLF)
-EndFunc
-
-Func SystemInfo()						;Gather valuable information regarding type of PC
-   Local $sysinfo1 = $shellex & ' .\Tools\SysinternalsSuite\PsInfo -accepteula -s -d > "' & $RptsDir & '\System Info.txt"'
-   Local $sysinfo2 = $shellex & ' systeminfo >> "' & $RptsDir & '\System Info.txt"'
-   Local $sysinfo3 = $shellex & ' set >> "' & $RptsDir & '\System Variables.txt"'
-
-   RunWait($sysinfo1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $sysinfo1 & @CRLF)
-   RunWait($sysinfo2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $sysinfo2 & @CRLF)
-   RunWait($sysinfo3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $sysinfo3 & @CRLF)
-EndFunc
-
-Func Services()							;Pertinent services information
-   Local $serv1 = $shellex & ' .\Tools\SysinternalsSuite\psservice -accepteula > "' & $RptsDir & '\Services.txt"'
-   Local $serv2 = $shellex & ' sc queryex >> "' & $RptsDir & '\Services.txt"'
-   Local $serv3 = $shellex & ' net start >> "' & $RptsDir & '\Services.txt"'
-
-   RunWait($serv1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $serv1 & @CRLF)
-   RunWait($serv2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $serv2 & @CRLF)
-   RunWait($serv3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $serv3 & @CRLF)
-EndFunc
-
-Func FileAssociation()					;Get information on file associations
-   Local $fa1 = $shellex & ' .\Tools\SysinternalsSuite\handle -a -accepteula c > "' & $RptsDir & '\Handles.txt"'
-
-   RunWait($fa1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $fa1 & @CRLF)
-EndFunc
-
-Func AccountInfo()						;Gather information pertaining to the user accounts
-   Local $acctinfo1 = $shellex & ' net accounts > "' & $RptsDir & '\Account Details.txt"'
-
-   RunWait($acctinfo1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $acctinfo1 & @CRLF)
-EndFunc
+EndFunc   ;==>Browse
 
 Func Srum()						;Gather information pertaining to the user accounts
    ;Local $srumdump = @ScriptDir & '\Tools\srum-dump'
    ;Local $srum1 = $shellex & ' "cd /d ' & $srumdump & ' && srum_dump.exe -i "' & $EvDir & '\SRUDB.dat' & '" -o "' & $EvDir & '\SRUM_DUMP_Output_Report.xls"'
    Local $robocopy = '"' & @ScriptDir & '\Tools\Robocopy.exe"'
-   Local $pf1 = @ComSpec & ' /c ' & $robocopy & ' "' & @WindowsDir & '\System32\sru" "' & $RptsDir & '\Evidence" SRUDB.dat /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\SRU Copy Log.txt"'
+   Local $pf1 = @ComSpec & ' /c ' & $robocopy & ' "' & $evidencePath & '\Windows\System32\sru" "' & $RptsDir & '\Evidence" SRUDB.dat /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\SRU Copy Log.txt"'
 
-   ShellExecuteWait($robocopy, '"' & @WindowsDir & '\System32\sru" "' & $RptsDir & '\Evidence" "SRUDB.dat" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Evidence\SRU Copy Log.txt"', $tools, "", @SW_HIDE)
+   ShellExecuteWait($robocopy, '"' & $evidencePath & '\Windows\System32\sru" "' & $RptsDir & '\Evidence" "SRUDB.dat" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Evidence\SRU Copy Log.txt"', $tools, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pf1 & @CRLF)
    ;SRUDB file to be processed by Magneto
    ;RunWait($srum1, "")
 	  ;FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $srum1 & @CRLF)
 EndFunc
 
-Func Hostname()							;Gather information on the hostname
-   Local $hostn1 = $shellex & ' whoami > "' & $RptsDir & '\Hostname.txt"'
-   Local $hostn2 = $shellex & ' hostname >> "' & $RptsDir & '\Hostname.txt"'
+Func AutoRun()							;Information regarding startup
+   ;NOTE: -a = All, -c = csv output
+   Local $autorun = $shellex & ' .\Tools\SysinternalsSuite\autorunsc.exe -accepteula -c -z > "' & $RptsDir & '\AutoRun Info.csv"'
 
-   RunWait($hostn1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $hostn1 & @CRLF)
-   RunWait($hostn2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $hostn2 & @CRLF)
-EndFunc
-
-Func Prefetch()							;Copy any prefecth data while maintaining metadata
-   Local $robocopy = '"' & @ScriptDir & '\Tools\Robocopy.exe"'
-   Local $pf1 = $shellex & ' ' & $robocopy & ' "' & @WindowsDir & '\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /ZB /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"'
-
-   If Not FileExists($EvDir & "\Prefetch") Then DirCreate($EvDir & "\Prefetch")
-
-   ShellExecuteWait($robocopy, ' "' & @WindowsDir & '\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /ZB /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pf1 & @CRLF)
+   RunWait($autorun, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autorun & @CRLF)
 EndFunc
 
 Func AutoRun_Target()					;Copy autorun target files
@@ -1987,6 +1142,8 @@ Func AutoRun_Target()					;Copy autorun target files
 		 If StringLen($temp[9]) <> 0 Then
 			Local $fullPath = StringReplace($temp[9],'"', "")
 			Local $parentDirectory = StringRegExpReplace($fullPath, '\\[^\\]*$', '')
+			$parentDirectory = StringRegExpReplace($parentDirectory, '^[^\\]*', $evidencePath)
+			MsgBox(0, "test", $parentDirectory)
 			Local $file = StringRegExpReplace($fullPath, '.*\\', '')
 			Local $autorun = $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Autorun" "' & $file & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log+:"' & $RptsDir & '\AutoRun_Target_RoboCopy_Log.txt"'
 			RunWait($autorun, @ScriptDir & '\Tools', @SW_HIDE)
@@ -1996,44 +1153,33 @@ Func AutoRun_Target()					;Copy autorun target files
    EndIf
 EndFunc
 
+Func Prefetch()							;Copy any prefecth data while maintaining metadata
+   Local $robocopy = '"' & @ScriptDir & '\Tools\Robocopy.exe"'
+   Local $pf1 = $shellex & ' ' & $robocopy & ' "' & $evidencePath & '\Windows\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /ZB /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"'
+
+   If Not FileExists($EvDir & "\Prefetch") Then DirCreate($EvDir & "\Prefetch")
+
+   ShellExecuteWait($robocopy, ' "' & $evidencePath & '\Windows\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /ZB /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pf1 & @CRLF)
+   EndFunc
+
 Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
    Local $robocopy = '"' & @ScriptDir & '\Tools\Robocopy.exe"'
    Local $winprefetch = ' .\Tools\nirsoft_package\NirSoft\winprefetchview'
-   Local $drivelistview = ' .\Tools\nirsoft_package\NirSoft\driveletterview'
-   Local $pf2 = $shellex & $winprefetch & ' /scomma "' & $RptsDir & '\Prefetch Info.csv"'
-   Local $pf3 = $shellex & $drivelistview & ' /scomma "' & $RptsDir & '\Drive Letter Info.csv"'
-
+   Local $pf2 = $shellex & $winprefetch & ' /folder "' & $RptsDir & '\Evidence\Prefetch" /scomma "' & $RptsDir & '\Prefetch Info.csv"'
    RunWait($pf2, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pf2 & @CRLF)
-   RunWait($pf3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pf3 & @CRLF)
-
-   ;Creates a dictionary containing mapping from Volume Serial Number to corresponding Drive Letter
-   Local $intCount = 0, $linecount = 0
-   Local $csv, $prefetchfile[1]
-   Local $driveDict = ObjCreate("Scripting.Dictionary")
-   Local $filename = $RptsDir & '\Drive Letter Info.csv'
-   While _WinAPI_FileInUse($filename) = 1
-       sleep(10)
-   WEnd
-   _FileReadToArray($filename, $csv)
-   If IsArray($csv) Then
-	  For $i = 1 To $csv[0]
-		 $temp = StringSplit($csv[$i], ",")
-		 Sleep(1)
-		 If StringLen($temp[1]) <> 0 And StringLen($temp[13]) <> 0 Then
-			$driveLetter = $temp[1]
-			$serialNumber = $temp[13]
-			$driveDict($serialNumber) = $driveLetter
-		 EndIf
-	  Next
-   EndIf
 
    ;Gets Target path of each prefetch file and uses robocopy to copy file to evidence directory
-   $filename = $RptsDir & '\Prefetch Info.csv'
+   Local $intCount = 0, $linecount = 0
+   Local $csv, $prefetchfile[1]
+   Local $filename = $RptsDir & "\Prefetch Info.csv"
+   Sleep(30)
+
    While _WinAPI_FileInUse($filename) = 1
-       sleep(10)
+	  Sleep(10)
    WEnd
+
    _FileReadToArray($filename, $csv)
    Local $prefetchDict = ObjCreate("Scripting.Dictionary")
    If IsArray($csv) Then
@@ -2041,13 +1187,14 @@ Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
 		 ;_ArrayDisplay(StringSplit($csv[$i], ","), "Test")
 		 $temp = StringSplit($csv[$i], ",")
 		 If StringLen($temp[7]) <> 0 Then
-			If @OSVersion = "WIN_10" Then
-			   If StringRegExp($temp[7], '-([^}]*)', $STR_REGEXPMATCH) Then
-				  Local $volSerialNumber = StringRegExp($temp[7], '-([^}]*)', $STR_REGEXPARRAYMATCH)[0]
-			   EndIf
-			   Local $drive = $driveDict(StringUpper($volSerialNumber))
-			   $temp[7] = StringRegExpReplace($temp[7], '^\\[^\\]*', $drive)
-			EndIf
+			;If @OSVersion = "WIN_10" Then
+			   ;If StringRegExp($temp[7], '-([^}]*)', $STR_REGEXPMATCH) Then
+				  ;Local $volSerialNumber = StringRegExp($temp[7], '-([^}]*)', $STR_REGEXPARRAYMATCH)[0]
+			   ;EndIf
+			   ;Local $drive = $driveDict(StringUpper($volSerialNumber))
+			   ;$temp[7] = StringRegExpReplace($temp[7], '^\\[^\\]*', $drive)
+			;EndIf
+			If StringLeft($temp[7], 1) = "\" Then $temp[7] = StringRegExpReplace($temp[7], '\\DEVICE\\HARDDISK[^\\]*', $evidencePath)
 			If Not $prefetchDict.Exists($temp[7]) Then
 			   $prefetchDict($temp[7]) = StringRegExpReplace($temp[1], '\.\w*$', '')
 			EndIf
@@ -2060,6 +1207,7 @@ Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
    For $i = 0 To $prefetchDict.Count - 1
 	  Local $fullPath = $dictKeys[$i]
 	  Local $parentDirectory = StringRegExpReplace($fullPath, '\\[^\\]*$', '')
+	  $parentDirectory = StringRegExpReplace($parentDirectory, '^[^\\]*', $evidencePath)
 	  Local $file = StringRegExpReplace($fullPath, '.*\\', '')
 	  Local $recF1 = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Prefetch\Files" "' & $file & '" /copyall /ZB /TS /r:2 /w:3 /FP /NP /log+:"' & $RptsDir & '\Prefetch_Target_RoboCopy_Log.txt"'
 	  ;some files do not allow renaming i.e. cmd
@@ -2086,35 +1234,20 @@ Func RecentFolder()						;Send information to the recent folder copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
-
 	  $profs = FileFindNextFile($usr)
-
 		 If @error then ExitLoop
-
 	  $uDir = $uPath & $profs
-
 	  $uATB = FileGetAttrib($uDir)
-
 	  If StringInStr($uATB, "D") Then _RobocopyRF($uDir, $profs)
-
    WEnd
 EndFunc
 
@@ -2123,30 +1256,19 @@ Func _RobocopyRF($path, $output)		;Copy Recent folder from all profiles while ma
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
    If Not FileExists($EvDir & '\Recent LNKs\' & $output) Then DirCreate($EvDir & '\Recent LNKs\' & $output)
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
-	  If $OS = "Users" Then
-			$recPATH = '"' & $path & '\AppData\Roaming\Microsoft\Windows\Recent"'
-		 Else
-			$recPATH = '"' & $path & '\Recent"'
-		 EndIf
+   If Not FileExists($evidencePath & "\Users") Then
+	  $recPATH = '"' & $path & '\Recent"'
+   Else
+	  $recPATH = '"' & $path & '\AppData\Roaming\Microsoft\Windows\Recent"'
+   EndIf
 
    Local $recF1 = $robocopy & ' ' & $recPATH & ' "' & $EvDir & '\Recent LNKs\' & $output & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'Recent LNKs\' & $output & ' Recent RoboCopy Log.txt"'
    RunWait($recF1, "", @SW_HIDE)
-		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $recF1 & @CRLF)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $recF1 & @CRLF)
 
    ;Uses lnkparser.exe to generate more information regarding LNK files
    Local $lnkparser = ' .\Tools\lnkparser.exe'
@@ -2166,35 +1288,21 @@ Func RecentFolder_Target()						;Send information to the recent folder copy func
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
-
 	  $profs = FileFindNextFile($usr)
-
 		 If @error then ExitLoop
-
 	  $uDir = $uPath & $profs
-
 	  $uATB = FileGetAttrib($uDir)
-
 	  If StringInStr($uATB, "D") Then _RobocopyRFTgt($uDir, $profs)
-
    WEnd
 EndFunc
 
@@ -2203,22 +1311,11 @@ Func _RobocopyRFTgt($path, $output)		;Copy Recent folder from all profiles while
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-	  If $OS = "Users" Then
-			$recPATH = $path & '\AppData\Roaming\Microsoft\Windows\Recent'
-	  Else
-			$recPATH = $path & '\Recent'
-	  EndIf
+   If Not FileExists($evidencePath & "\Users") Then
+	  $recPATH = $path & '\Recent'
+   Else
+	  $recPATH = $path & '\AppData\Roaming\Microsoft\Windows\Recent'
+   EndIf
 
    ;Gets Target path of each LNK file and uses robocopy to copy file to evidence directory
    $lnkfiles = FileFindFirstFile($recPATH & '\*.*')
@@ -2243,6 +1340,7 @@ Func _RobocopyRFTgtFiles($path, $output)		;Copy Recent folder from all profiles 
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $parentDirectory = StringRegExpReplace($path, '\\[^\\]*$', '')
+   $parentDirectory = StringRegExpReplace($parentDirectory, '^[^\\]*', $evidencePath)
    Local $file =  '"' & StringRegExpReplace($path, '.*\\', '') & '"'
    Local $recF1 = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Recent LNKs\' & $output & '\Files" ' & $file & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /IS'
    ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $EvDir & '\Recent LNKs\' & $output & '\Files" ' & $file & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /IS /log:"' & $EvDir & 'Recent LNKs\' & $output & ' Recent Target RoboCopy Log.txt"', $tools, "", @SW_HIDE)
@@ -2259,36 +1357,22 @@ Func JumpLists()						;Provide info to the Jumplist copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-
-   If $OS = "Users" Then
-	  $uPath = "C:\Users\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
    Else
-	  $uPath = "C:\Documents and Settings\"
+	  $uPath = $evidencePath & "\Users\"
    EndIf
 
-	  $usr = FileFindFirstFile($uPath & "*.*")
+   $usr = FileFindFirstFile($uPath & "*.*")
 
-	  While 1
-
-		 $profs = FileFindNextFile($usr)
-
-			If @error then ExitLoop
-
-		 $uDir = $uPath & $profs
-
-		 $uATB = FileGetAttrib($uDir)
-
-		 If StringInStr($uATB, "D") Then _RobocopyJL($udir, $profs)
-
-	  WEnd
+   While 1
+	  $profs = FileFindNextFile($usr)
+		 If @error then ExitLoop
+	  $uDir = $uPath & $profs
+	  $uATB = FileGetAttrib($uDir)
+	  If StringInStr($uATB, "D") Then _RobocopyJL($udir, $profs)
+   WEnd
 EndFunc
 
 Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
@@ -2319,7 +1403,6 @@ Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
  EndFunc
 
  Func _RobocopyJL($path, $output)		;Copy Jumplist information while maintaining metadata
-
    Local $robocopy
    Local $robocmd
    Local $autodest
@@ -2327,11 +1410,6 @@ Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
    Local $shellex = '"' & @ScriptDir & '\Tools\cmd.exe" /c'
    Local $autodest = $EvDir & '\Jump Lists\' & $output & '\Automatic'
    Local $customdest = $EvDir & '\Jump Lists\' & $output & '\Custom'
-
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2361,35 +1439,23 @@ Func JumpLists_Target()						;Provide info to the Jumplist copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
-   If $OS = "Users" Then
-		 $uPath = "C:\Users\"
-	  Else
-	   $uPath = "C:\Documents and Settings\"
-	EndIf
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
-	  $usr = FileFindFirstFile($uPath & "*.*")
+   $usr = FileFindFirstFile($uPath & "*.*")
 
-	  While 1
-
-		 $profs = FileFindNextFile($usr)
-
-			If @error then ExitLoop
-
-		 $uDir = "C:\Users\" & $profs
-
-		 $uATB = FileGetAttrib($uDir)
-
-		 If StringInStr($uATB, "D") Then _RobocopyJLTgt($udir, $profs)
-
-	  WEnd
+   While 1
+	  $profs = FileFindNextFile($usr)
+		 If @error then ExitLoop
+	  $uDir = $evidencePath & "\Users\" & $profs
+	  $uATB = FileGetAttrib($uDir)
+	  If StringInStr($uATB, "D") Then _RobocopyJLTgt($udir, $profs)
+   WEnd
 EndFunc
 
 Func _RobocopyJLTgt($path, $output)		;Copy Jumplist information while maintaining metadata
@@ -2398,11 +1464,6 @@ Func _RobocopyJLTgt($path, $output)		;Copy Jumplist information while maintainin
    Local $autodest = $EvDir & '\Jump Lists\' & $output & '\Automatic'
    Local $customdest = $EvDir & '\Jump Lists\' & $output & '\Custom'
    Local $jlecmd = ' .\Tools\JLECmd-master\JLECmd-master\JLECmd\bin\Debug\JLECmd'
-
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
 
    If Not FileExists($autodest & "\Files") Then DirCreate($autodest & "\Files")
    If Not FileExists($customdest & "\Files") Then DirCreate($customdest & "\Files")
@@ -2472,6 +1533,7 @@ Func _RobocopyJLTgtFiles($csv, $output, $tsvfile, $dest)
 	  If StringRegExp($fullPath, '\.\w*$') Then
 		 Local $md5 = _Crypt_HashFile($fullPath, $CALG_MD5)
 		 Local $parentDirectory = StringRegExpReplace($fullPath, '\\[^\\]*$', '')
+		 $parentDirectory = StringRegExpReplace($parentDirectory, '^[^\\]*', $evidencePath)
 		 Local $file = StringRegExpReplace($fullPath, '.*\\', '')
 		 Local $auto = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $dest & '\Files" "' & $file & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_Target_RoboCopy_Log.txt"'
 		 Local $custom = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $dest & '\Files" "' & $file & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_Target_RoboCopy_Log.txt"'
@@ -2496,129 +1558,80 @@ Func _RobocopyJLTgtFiles($csv, $output, $tsvfile, $dest)
    _FileWriteFromArray($EvDir & '\Jump Lists\' & $output & '\' & $tsvfile, $csv)
 EndFunc
 
-Func AutoRun()							;Information regarding startup
-   ;NOTE: -a = All, -c = csv output
-   Local $autorun = $shellex & ' .\Tools\SysinternalsSuite\autorunsc.exe -accepteula -c > "' & $RptsDir & '\AutoRun Info.csv"'
-
-   RunWait($autorun, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autorun & @CRLF)
-EndFunc
-
-Func LoggedOn()							;Gather information on users logged on
-   Local $logon1 = $shellex & ' .\Tools\SysinternalsSuite\PsLoggedon -accepteula > "' & $RptsDir & '\Logged On.txt"'
-   Local $logon2 = $shellex & ' .\Tools\SysinternalsSuite\logonsessions -accepteula c >> "' & $RptsDir & '\Logged On Users.txt"'
-
-   RunWait($logon1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $logon1 & @CRLF)
-   RunWait($logon2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $logon2 & @CRLF)
-EndFunc
-
 Func NTFSInfo()							;Gather information regarding NTFS
-   Local $ntfs1 = $shellex & ' .\Tools\SysinternalsSuite\ntfsinfo c > "' & $RptsDir & '\NTFS Info.txt"'
-   Local $ntfs2 = $shellex & ' fsutil fsinfo ntfsinfo C: >> "' & $RptsDir & '\NTFS Info.txt"'
+   Local $ntfs1 = $shellex & ' .\Tools\SysinternalsSuite\ntfsinfo ' & $evidencePath & ' > "' & $RptsDir & '\NTFS Info.txt"'
 
    RunWait($ntfs1, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $ntfs1 & @CRLF)
-   RunWait($ntfs2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $ntfs2 & @CRLF)
-EndFunc
+   EndFunc
 
 Func VolInfo()							;Gather volume information
-   Local $vol1 = $shellex & ' fsutil fsinfo volumeinfo C: >> "' & $RptsDir & '\Volume Info.txt"'
+   Local $vol1 = $shellex & ' fsutil fsinfo volumeinfo ' & $evidencePath & ' >> "' & $RptsDir & '\Volume Info.txt"'
 
    RunWait($vol1, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vol1 & @CRLF)
 EndFunc
 
-Func MountedDisk()						;Mounted Disk Information
-   Local $md1 = $shellex & ' .\Tools\SysinternalsSuite\diskext -accepteula > "' & $RptsDir & '\Disk Mounts.txt"'
-
-   RunWait($md1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $md1 & @CRLF)
-EndFunc
-
 Func Directory()						;Get list of directory structure
-   Local $dir1 = $shellex & ' tree c:\ /f /a > "' & $RptsDir & '\Directory Info.txt"'
+   Local $dir1 = $shellex & ' tree ' & $evidencePath & '\ /f /a > "' & $RptsDir & '\Directory Info.txt"'
 
    RunWait($dir1, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $dir1 & @CRLF)
 EndFunc
 
-Func ScheduledTasks()					;List any scheduled tasks
-   If @OSVersion = "WIN_XP" Then
-	  Local $schedtask1 = $shellex & ' at > "' & $RptsDir & '\Scheduled Tasks.txt"'
-   Else
-	  Local $schedtask1 = $shellex & ' schtasks > "' & $RptsDir & '\Scheduled Tasks.txt"'
-   EndIf
-
-   RunWait($schedtask1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $schedtask1 & @CRLF)
-EndFunc
-
 Func SystemRRip()						;Copy the SYSTEM HIV for analysis
-   Local $sysrip
-
-   If @OSVersion = "WIN_XP" Then
-	  $sysrip = $shellex & ' REG SAVE HKLM\SYSTEM "' & $EvDir & 'SYSTEM_' & @ComputerName & '.hiv"'
-   Else
-	  $sysrip = $shellex & ' REG SAVE HKLM\SYSTEM "' & $EvDir & 'SYSTEM_' & @ComputerName & '.hiv" /y'
-   EndIf
+   Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
+   Local $sysrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SYSTEM /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SYSTEM_RoboCopy.txt"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SYSTEM' & '" "SYSTEM_' & $evidenceName & '.hiv"'
 
    RunWait($sysrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $sysrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func SecurityRRip()						;Copy the SECURITY HIV for analysis
-   Local $secrip
-
-   If @OSVersion = "WIN_XP" Then
-	  $secrip = $shellex & ' REG SAVE HKLM\SECURITY "' & $EvDir & 'SECURITY_' & @ComputerName & '.hiv"'
-   Else
-	  $secrip = $shellex & ' REG SAVE HKLM\SECURITY "' & $EvDir & 'SECURITY_' & @ComputerName & '.hiv" /y'
-   EndIf
+   Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
+   Local $secrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SECURITY /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SECURITY_RoboCopy.txt"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SECURITY' & '" "SECURITY_' & $evidenceName & '.hiv"'
 
    RunWait($secrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $secrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func SAMRRip()							;Copy the SAM HIV for analysis
-   Local $samrip
-
-   If @OSVersion = "WIN_XP" Then
-	  $samrip = $shellex & ' REG SAVE HKLM\SAM "' & $EvDir & 'SAM_' & @ComputerName & '.hiv"'
-   Else
-	  $samrip = $shellex & ' REG SAVE HKLM\SAM "' & $EvDir & 'SAM_' & @ComputerName & '.hiv" /y'
-   EndIf
+   Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
+   Local $samrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SAM /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SAM_RoboCopy.txt"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SAM' & '" "SAM_' & $evidenceName & '.hiv"'
 
    RunWait($samrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $samrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func SoftwareRRip()						;Copy the SOFTWARE HIV for analysis
-   Local $softrip
-
-   If @OSVersion = "WIN_XP" Then
-	  $softrip = $shellex & ' REG SAVE HKLM\SOFTWARE "' & $EvDir & 'SOFTWARE_' & @ComputerName & '.hiv"'
-   Else
-	  $softrip = @ComSpec & ' /c REG SAVE HKLM\SOFTWARE "' & $EvDir & 'SOFTWARE_' & @ComputerName & '.hiv"'
-   EndIf
+   Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
+   Local $softrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SOFTWARE /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SOFTWARE_RoboCopy.txt"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SOFTWARE' & '" "SOFTWARE_' & $evidenceName & '.hiv"'
 
    RunWait($softrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $softrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func HKCURRip()							;Copy the HKCU HIV for analysis
-   Local $hkcurip
-
-   If @OSVersion = "WIN_XP" Then
-	  $hkcurip = $shellex & ' REG SAVE HKCU "' & $EvDir & '\HKCU_' & @ComputerName & '.hiv"'
-   Else
-	  $hkcurip = $shellex & ' REG SAVE HKCU "' & $EvDir & '\HKCU_' & @ComputerName & '.hiv" /y'
-   EndIf
+   Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
+   Local $hkcurip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" DEFAULT /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'CURRENTUSER_RoboCopy.txt"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\DEFAULT' & '" "HKCU_' & $evidenceName & '.hiv"'
 
    RunWait($hkcurip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $hkcurip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func NTUserRRip()						;Copy all NTUSER.dat files from each profile
@@ -2628,23 +1641,29 @@ Func NTUserRRip()						;Copy all NTUSER.dat files from each profile
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $ntuserCount = 1
 
-   $h_Proc = Run(@ComSpec & " /c " & 'REG QUERY "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProfileList"', "", @SW_HIDE, 0x08)
+   $loadReg = RunWait(@ComSpec & " /c " & 'REG LOAD HKLM\TempHive "' & $EvDir & 'SOFTWARE_' & $evidenceName & '.hiv"')
+   ;While 1
+	  ;$sTemp = StdoutRead($loadReg)
+	  ;If StringInStr($sTemp, "The operation completed successfully") Then ExitLoop
+   ;WEnd
+   Sleep(30)
+   $h_Proc = Run(@ComSpec & " /c " & 'REG QUERY "HKEY_LOCAL_MACHINE\TempHive\Microsoft\Windows NT\CurrentVersion\ProfileList"', "", @SW_HIDE, 0x02)
 
    While 1
 	  $sTemp = StdoutRead($h_Proc)
 	  $s_Out &= $sTemp
 	  If @error Then ExitLoop
    WEnd
-   $aLines = StringRegExp($s_Out, "(?m:^)HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\(S-1-5-21-\d*-\d*-\d*-\S*)",3)
+   ;MsgBox(0, "test", $s_Out)
+   $aLines = StringRegExp($s_Out, "(?m:^)HKEY_LOCAL_MACHINE\\TempHive\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\(S-1-5-21-\d*-\d*-\d*-\S*)",3)
    ;_ArrayDisplay($aLines, "test")
 
    If Not @error Then
 	  For $i = 0 To UBound($aLines) - 1
 		 $s_Val = $aLines[$i]
 		 $s_Val = StringStripWS($s_Val, 2)
-		 _ArrayDisplay($s_Val, "test")
 		 Local $nturip
-		 $h_Proc = Run(@ComSpec & " /c " & 'REG QUERY "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\' & $s_Val & '" /v ProfileImagePath', "", @SW_HIDE, 0x08)
+		 $h_Proc = Run(@ComSpec & " /c " & 'REG QUERY "HKEY_LOCAL_MACHINE\TempHive\Microsoft\Windows NT\CurrentVersion\ProfileList\' & $s_Val & '" /v ProfileImagePath', "", @SW_MAXIMIZE, 0x02)
 		 $s_Out = ""
 		 While 1
 			$sTemp = StdoutRead($h_Proc)
@@ -2652,30 +1671,32 @@ Func NTUserRRip()						;Copy all NTUSER.dat files from each profile
 			If @error Then ExitLoop
 		 WEnd
 		 $aPath = StringRegExp($s_Out, "REG_EXPAND_SZ\s*([\S]*)",1)[0]
+		 $aPath = StringRegExpReplace($aPath, '^[^\\]*', $evidencePath)
 		 If FileExists ($aPath & '\NTUSER.DAT') Then
-			Local $cmd = $robocopy & ' ' & $aPath & ' "' & $RptsDir & '\Evidence" NTUSER.DAT /r:1 /w:3 /log+:"' & $EvDir & 'NTUSER Log Copy.txt"'
+			Local $cmd = $robocopy & ' ' & $aPath & ' "' & $RptsDir & '\Evidence" NTUSER.DAT /r:1 /w:3 /log+:"' & $LogsDir & 'NTUSER Log Copy.txt"'
 			Local $test = RunWait($cmd, "", @SW_HIDE, 0x08)
 			FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $cmd & @CRLF)
 
 			$sFileOld = $EvDir & 'NTUSER.DAT'
-			$sFileRenamed = $EvDir & @ComputerName &'_USER_' & $ntuserCount & '.dat'
+			$sFileRenamed = $EvDir & $evidenceName &'_USER_' & $ntuserCount & '.dat'
 			Local $mov = FileMove($sFileOld, $sFileRenamed)
 
-			If $mov = 0 Then
-			    Local $hkcurip
-			   If @OSVersion = "WIN_XP" Then
-				  $hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat"'
-			   Else
-				  $hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat" /y'
-			   EndIf
-			   RunWait($hkcurip, "", @SW_HIDE)
-			EndIf
+			;If $mov = 0 Thenol0
+			    ;Local $hkcurip
+			   ;If @OSVersion = "WIN_XP" Then
+				  ;$hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat"'
+			   ;Else
+				  ;$hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat" /y'
+			   ;EndIf
+			   ;RunWait($hkcurip, "", @SW_HIDE)
+			;EndIf
 
 			FileWriteLine($usrFile, "HKEY_USERS\"&$s_Val&":USER_"&$ntuserCount&@CRLF)
 			$ntuserCount = $ntuserCount + 1
 		 EndIf
 	  Next
    EndIf
+   $unloadReg = Run(@ComSpec & " /c " & 'REG UNLOAD HKLM\TempHive')
 EndFunc
 
 Func MD5()								;Special thanks to Jesse Kornblum for his amazing hashing tools
@@ -2739,19 +1760,6 @@ Func EvtCopy()							;Copy all event logs from local machine
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $robo7 = '"' & @ScriptDir & '\Tools\robo7.exe"'
 
-   Local $evtc1 = $shellex & ' .\Tools\SysinternalsSuite\psloglist.exe -accepteula Application > "' & $RptsDir & '\Application Log.csv"'
-   Local $evtc2 = $shellex & ' .\Tools\SysinternalsSuite\psloglist.exe -accepteula System > "' & $RptsDir & '\System Log.csv"'
-   Local $evtc3 = $shellex & ' .\Tools\SysinternalsSuite\psloglist.exe -accepteula Security > "' & $RptsDir & '\Security Log.csv"'
-
-   RunWait($evtc1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $evtc1 & @CRLF)
-
-   RunWait($evtc2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $evtc2 & @CRLF)
-
-   RunWait($evtc3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $evtc3 & @CRLF)
-
    If @OSVersion = "WIN_7" Then $OS = "Users"
    If @OSVersion = "WIN_XP" Then $OS = "Docs"
    If @OSVersion = "WIN_VISTA" Then $OS = "Users"
@@ -2763,16 +1771,17 @@ Func EvtCopy()							;Copy all event logs from local machine
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
 
-   If $OS = "Docs" Then $evtdir = '"C:\Windows\system32\config"'
-   If $OS = "Users" Then $evtdir = '"C:\Windows\system32\winevt\Logs"'
-
-   If $OS = "Docs" Then $evtext = "evt"
-   If $OS = "Users" Then $evtext = "evtx"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $evtdir = '"' & $evidencePath & '\Windows\system32\config"'
+	  $evtext = "evt"
+	  $EvtCmd = $robocopy & " " & $evtdir & ' "' & $LogDir & '" *.' & $evtext & ' /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
+   Else
+	  $evtdir = '"' & $evidencePath & '\Windows\system32\winevt\Logs"'
+	  $evtext = "evtx"
+	  $EvtCmd = $robo7 & " " & $evtdir & ' "' & $LogDir & '" /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
+   EndIf
 
    If Not FileExists($LogDir) Then DirCreate($LogDir)
-
-   If $OS = "Docs" Then $EvtCmd = $robocopy & " " & $evtdir & ' "' & $LogDir & '" *.' & $evtext & ' /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
-   If $OS = "Users" Then $EvtCmd = $robo7 & " " & $evtdir & ' "' & $LogDir & '" /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
 
    RunWait($EvtCmd, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Copied ." & $evtext & " files from " & $evtdir & "." & @CRLF)
@@ -2782,19 +1791,11 @@ Func UsrclassE()  						;Search for profiles and initiate the copy of USRCLASS.d
 
    Local $OS, $uPath, $usr, $profs, $uDir, $uPath, $uATB
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    $str=''
@@ -2823,13 +1824,13 @@ EndFunc
 
 Func _Usrclass($prof)					;Performs the function of copying the USRCLASS.dat
    ;Finds the inode number of USRCLASS.DAT within each users' folder
-   Local $usrce = $shellex & ' .\Tools\sleuthkit-win32-3.2.3\bin\ifind.exe -n /users/' & $prof & '/appdata/local/microsoft/windows/usrclass.dat \\.\c: > MFTEntries.log'
+   Local $usrce = $shellex & ' .\Tools\sleuthkit-win32-3.2.3\bin\ifind.exe -n /users/' & $prof & '/appdata/local/microsoft/windows/usrclass.dat \\.\' & StringReplace($evidencePath, "\","") & ' > MFTEntries.log'
    RunWait($usrce, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $usrce & @CRLF)
    $log = FileReadLine("MFTEntries.log",1)
 
    ;Extracts USRCLASS.DAT data using the inode number
-   Local $catusrce = $shellex & ' .\Tools\sleuthkit-win32-3.2.3\bin\icat.exe \\.\c: ' & $log & ' > "' & $EvDir & $prof & '-usrclass.dat"'
+   Local $catusrce = $shellex & ' .\Tools\sleuthkit-win32-3.2.3\bin\icat.exe \\.\' & StringReplace($evidencePath, "\", "") & ' ' & $log & ' > "' & $EvDir & $prof & '-usrclass.dat"'
    RunWait($catusrce, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $catusrce & @CRLF)
    FileDelete("MFTEntries.log")
@@ -2837,13 +1838,15 @@ Func _Usrclass($prof)					;Performs the function of copying the USRCLASS.dat
 EndFunc
 
 Func MFTgrab()							;Use iCat to rip a file from NTFS file system
-   Local $MFTc = $shellex & ' .\Tools\sleuthkit-win32-3.2.3\bin\icat.exe \\.\c: 0 > "' & $EvDir & '$MFTcopy"'
+   Local $MFTc = $shellex & ' .\Tools\sleuthkit-win32-3.2.3\bin\icat.exe \\.\' & StringReplace($evidencePath, "\", "") & ' 0 > "' & $EvDir & '$MFTcopy"'
 
    RunWait($MFTc, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $MFTc & @CRLF)
 EndFunc
 
 Func VSC_Info()
+   Local $drive = StringReplace($evidencePath, "\", "", -1)
+   MsgBox(0, "test", $drive)
    Local $vscinfo = @ComSpec & ' /c vssadmin list shadows /for=C: > "' & $RptsDir & '\VSC Information.txt"'
    RunWait($vscinfo, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscinfo & @CRLF)
@@ -2893,8 +1896,7 @@ Func VSC_Prefetch()						;Copy Prefetch data from any Volume Shadow Copies
 	  $vscpf1 = $shellex & ' ' & $robocopy & ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"'
 	  If FileExists("C:\VSC_" & $v) = 1 Then
 		 If Not FileExists($EvDir & "\VSC_" & $v &"\Prefetch") Then DirCreate($EvDir & "\VSC_" & $v &"\Prefetch")
-
-		 ShellExecuteWait($robocopy, ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"', $tools, "", @SW_HIDE)
+		 ShellExecuteWait($robocopy, ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"', $tools)
 			FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscpf1 & @CRLF)
 	  EndIf
    Next
@@ -2959,7 +1961,7 @@ Func VSC_RobocopyRF($path, $output, $vrfc)		;Copy Recent folder from all profile
    Local $vscrf1 = $robocopy & " " & $recPATH & ' "' & $EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /SL /log:"' & $EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output & '_RecentFolder_Copy.txt"'
 
    RunWait($vscrf1, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscrf1 & @CRLF)
+		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscrf1 & @CRLF)
 EndFunc
 
 Func VSC_JumpLists()					;Provide info to the Jumplist copy function (Volume Shadow Copy version)
@@ -3208,184 +2210,8 @@ Func AutorunVTEnabled()							;Running autorunsc with VT checking, TAKES A LONG 
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autorun & @CRLF)
 EndFunc
 
-Func ProcexpVTEnabled()							;Running autorunsc with VT checking, TAKES A LONG TIME TO RUN!
-   Local $autorun = $shellex & ' .\Tools\SysinternalsSuite\procexp.exe /e'
-
-   Run($autorun, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autorun & @CRLF)
-EndFunc
-
-Func dcInfo()
-   ;Get Domain Controller Information
-   Local $nltest = @ComSpec & ' /c nltest /dclist: > "' & $RptsDir & '\nltest.txt"'
-   RunWait($nltest, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $nltest & @CRLF)
-EndFunc
-
-Func wmi_tz()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Timezone.csv"' & ' timezone list brief /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_usr()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-UserAccountList.csv"' & ' useraccount list /format:csv'
-   Local $wmi2 = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-UserAccountAll.csv"' & ' useraccount get /ALL /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-   RunWait($wmi2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi2 & @CRLF)
-EndFunc
-
-Func wmi_model()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Model.csv"' & ' csproduct get name /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_hotfix()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-HotFix.csv"' & ' qfe get Hotfixid /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_warranty()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-SerialNumber.csv"' & ' bios get serialnumber /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_nic()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-NIC.csv"' & ' nicconfig get description,IPAddress,MACaddress /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_manu()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Manufacturer.csv"' & ' computersystem get manufacturer /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_software()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Software.csv"' & ' product list /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_evt()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-EventLogName.csv"' & ' nteventlog get name /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_proc()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-ProcessStatus.csv"' & ' process list status /format:csv'
-   Local $wmi2 = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-ProcessMemory.csv"' & ' process list memory /format:csv'
-   Local $wmi3 = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-ProcessGet.csv"' & ' process get caption,executablepath,commandline /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-   RunWait($wmi2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi2 & @CRLF)
-   RunWait($wmi3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi3 & @CRLF)
-
-      ;Outputs Process and Loaded DLLs
-   Local $objWMIProcess = ObjGet("winmgmts:\\localhost\root\cimv2")
-   Local $objWMIService = ObjGet("winmgmts:\\localhost\root\cimv2")
-   Local $colAdapters = $objWMIService.ExecQuery("Select * from Win32_PerfFormattedData_PerfProc_FullImage_Costly","WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
-   $str = ''
-   For $objList In $colAdapters
-	  $str &= $objList.Name & "/"
-	  $processName = StringSplit($objList.Name, '/')[1] & ".exe"
-	  $query = "Select * from Win32_Process Where Name='" & $processName & "'"
-	  Local $pids = $objWMIProcess.ExecQuery($query,"WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
-	  For $pid in $pids
-		 $str &= $pid.ProcessID
-	  Next
-	  $str &= @CRLF
-   Next
-   FileWrite($RptsDir & '\ProcessDLLs.txt', $str)
-   FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: Select * from Win32_PerfFormattedData_PerfProc_FullImage_Costly; Select * from Win32_Process" & @CRLF)
-EndFunc
-
-Func wmi_job()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-JobList.csv"' & ' job list brief /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_startup()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-StartupBrief.csv"' & ' startup list brief /format:csv'
-   Local $wmi2 = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-StartupFull.csv"' & ' startup list full /format:csv'
-   Local $wmi3 = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-StartupGet.csv"' & ' startup get caption,command /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-   RunWait($wmi2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi2 & @CRLF)
-   RunWait($wmi3, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi3 & @CRLF)
-EndFunc
-
-Func wmi_domain()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Domain.csv"' & ' ntdomain /format:csv'
-   Local $wmi2 = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-DomainBrief.csv"' & ' ntdomain list brief /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-   RunWait($wmi2, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi2 & @CRLF)
-EndFunc
-
-Func wmi_service()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Service.csv"' & ' service list config /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_bios()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Bios.csv"' & ' bios /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_hd()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-Harddrive.csv"' & ' logicaldisk where drivetype=3 get name, freespace, systemname, filesystem, size, volumeserialnumber /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_share()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-ShareDriveInfo.csv"' & ' share get /ALL /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
-Func wmi_prodkey()
-   Local $wmi = @ComSpec & ' /c wmic /output:"' & $RptsDir & '\wmi-ProductKey.csv"' & ' path SoftwareLicensingService get OA3xOriginalProductKey /format:csv'
-
-   RunWait($wmi, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $wmi & @CRLF)
-EndFunc
-
 Func exifmetadata()
-   Local $metadata = @ComSpec & ' /c .\Tools\exiftool-10.31\exiftool -r C:\ > "' & $RptsDir & '\exifmetadata.txt"'
+   Local $metadata = @ComSpec & ' /c .\Tools\exiftool-10.31\exiftool -r ' & $evidencePath & ' > "' & $RptsDir & '\exifmetadata.txt"'
 
    RunWait($metadata, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $metadata & @CRLF)
@@ -3401,19 +2227,11 @@ Func bwsr_cache()						;Send information to the recent folder copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
@@ -3439,20 +2257,11 @@ Func bwsr_cache()						;Send information to the recent folder copy function
 EndFunc
 
 Func mozilla_cache($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Mozilla\Firefox\Profiles\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Mozilla\Firefox\Profiles\"
+   EndIf
 
    ;Finds for .default mozilla profile
    $bwsrprofiles = FileFindFirstFile($uDir & "*.*")
@@ -3466,7 +2275,7 @@ Func mozilla_cache($uDir, $profs)
 
    Local $mozillacache = ' .\Tools\nirsoft_package\NirSoft\mozillacacheview'
    Local $cache1a = $shellex & $mozillacache & ' -folder "' & $uDir & '" /scomma "' & $BrowserDir & $profs & '\Mozilla\Mozilla Cache.csv"'
-   Local $cache1b = $shellex & $mozillacache & ' -folder "' & $uDir & '" /copycache "" "" /CopyFilesFolder "' & $BrowserDir & $profs & '\Mozilla\Cache_Files" /UseWebSiteDirStructure 0'
+   Local $cache1b = $shellex & $mozillacache & ' -folder "' & $uDir & '" /copycache "" "" /CopyFilesFolder "' & $BrowserDir & $profs & '\Mozilla\Cache_Files" /Use      SiteDirStructure 0'
    RunWait($cache1a, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $cache1a & @CRLF)
    RunWait($cache1b, "", @SW_HIDE)
@@ -3474,20 +2283,11 @@ Func mozilla_cache($uDir, $profs)
 EndFunc
 
 Func ie_cache($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Microsoft\Windows\WebCache"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Local Settings\Temporary Internet Files"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Local Settings\Temporary Internet Files"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Microsoft\Windows\WebCache"
+   EndIf
 
    Local $iecache = ' .\Tools\nirsoft_package\NirSoft\iecacheview'
    Local $cache1a = $shellex & $iecache & ' -folder "' & $uDir & '" /scomma "' & $BrowserDir & $profs & '\IE\IE Cache.csv"'
@@ -3499,20 +2299,11 @@ Func ie_cache($uDir, $profs)
 EndFunc
 
 Func chrome_cache($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\Default\Cache"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\Default\Cache"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Google\Chrome\User Data\Default\Cache"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\Default\Cache"
+   EndIf
 
    Local $chromecache = ' .\Tools\nirsoft_package\NirSoft\chromecacheview'
    Local $cache1a = $shellex & $chromecache & ' -folder "' & $uDir & '" /scomma "' & $BrowserDir & '\' & $profs & '\Chrome\Chrome Cache.csv"'
@@ -3531,19 +2322,11 @@ Func bwsr_cookies()						;Send information to the recent folder copy function
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
@@ -3566,20 +2349,11 @@ Func bwsr_cookies()						;Send information to the recent folder copy function
 EndFunc
 
 Func mozilla_cookies($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   Else
+	  $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
+   EndIf
 
    ;Finds for .default mozilla profile
    $bwsrprofiles = FileFindFirstFile($uDir & "*.*")
@@ -3610,22 +2384,15 @@ Func ie_cookies($uDir, $profs)
 EndFunc
 
 Func chrome_cookies($uDir, $profs)
-   Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
 
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
+   EndIf
+
    $rootDir = $uDir
 
    If FileExists($uDir & "\Default") Then
@@ -3659,21 +2426,12 @@ Func bwsr_dl()						;Send information to the recent folder copy function
    Local $uDir
    Local $uATB
    Local $uPath
-   Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
@@ -3696,20 +2454,11 @@ Func bwsr_dl()						;Send information to the recent folder copy function
 EndFunc
 
 Func mozilla_download($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   Else
+	  $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
+   EndIf
 
    ;Finds for .default mozilla profile
    $bwsrprofiles = FileFindFirstFile($uDir & "*.*")
@@ -3723,22 +2472,14 @@ Func mozilla_download($uDir, $profs)
 EndFunc
 
 Func chrome_download($uDir, $profs)
-   Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
 
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
+   EndIf
    $rootDir = $uDir
 
    If FileExists($uDir & "\Default") Then
@@ -3774,19 +2515,11 @@ Func bwsr_autocomplete()						;Send information to the recent folder copy functi
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings\"
+   Else
+	  $uPath = $evidencePath & "\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
@@ -3809,20 +2542,11 @@ Func bwsr_autocomplete()						;Send information to the recent folder copy functi
 EndFunc
 
 Func mozilla_autocomplete($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   Else
+	  $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
+   EndIf
 
    ;Finds for .default mozilla profile
    $bwsrprofiles = FileFindFirstFile($uDir & "*.*")
@@ -3836,22 +2560,14 @@ Func mozilla_autocomplete($uDir, $profs)
 EndFunc
 
 Func chrome_autocomplete($uDir, $profs)
-   Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
 
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
+   EndIf
    $rootDir = $uDir
 
    If FileExists($uDir & "\Default") Then
@@ -3882,17 +2598,14 @@ Func chrome_autocomplete_robocopy($uDir, $profs, $chromeProfs)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autocomplete2 & @CRLF)
 EndFunc
 
-Func bwsr_password()
-   Local $browserPassword = ' .\Tools\nirsoft_package\NirSoft\WebBrowserPassView'
-   Local $pass = $shellex & $browserPassword & ' /LoadPasswordsIE 1 /LoadPasswordsFirefox 1 /LoadPasswordsChrome 1 /LoadPasswordsSafari 1 /LoadPasswordsOpera 1 /scomma "' & $BrowserDir & '\Web Passwords.csv"'
-
-   RunWait($pass, "", @SW_HIDE)
-	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pass & @CRLF)
-EndFunc
-
 Func bwsr_hist()
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = $evidencePath & "\Documents and Settings"
+   Else
+	  $uPath = $evidencePath & "\Users"
+   EndIf
    Local $browserHistory = ' .\Tools\nirsoft_package\NirSoft\browsinghistoryview'
-   Local $hist = $shellex & $browserHistory & ' /HistorySource 1 /LoadIE 1 /LoadFirefox 1 /LoadChrome1 /LoadSafari 1 /scomma "' & $BrowserDir & '\Browser History.csv"'
+   Local $hist = $shellex & $browserHistory & ' /HistorySource 3 /HistorySourceFolder "' & $uPath & '" /LoadIE 1 /LoadFirefox 1 /LoadChrome1 /LoadSafari 1 /scomma "' & $BrowserDir & '\Browser History.csv"'
 
    RunWait($hist, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $hist & @CRLF)
@@ -3915,19 +2628,11 @@ Func bwsr_fav()
    ;RunWait($fav2, "", @SW_HIDE)
 	  ;FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $fav2 & @CRLF)
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = "C:\Documents and Settings\"
+   Else
+	  $uPath = "C:\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
@@ -3950,20 +2655,11 @@ Func bwsr_fav()
 EndFunc
 
 Func mozilla_fav($uDir, $profs)
-   Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
+   Else
+	  $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
+   EndIf
 
    ;Finds for .default mozilla profile
    $bwsrprofiles = FileFindFirstFile($uDir & "*.*")
@@ -3988,22 +2684,14 @@ Func ie_fav($uDir, $profs)
 EndFunc
 
 Func chrome_fav($uDir, $profs)
-   Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
 
-   If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
-   If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
+   Else
+	  $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
+   EndIf
    $rootDir = $uDir
 
    If FileExists($uDir & "\Default") Then
@@ -4037,21 +2725,12 @@ Func bwsr_webcache()
    Local $uDir
    Local $uATB
    Local $uPath
-   Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-
-   If $OS = "Users" Then $uPath = "C:\Users\"
-   If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
+   If Not FileExists($evidencePath & "\Users") Then
+	  $uPath = "C:\Documents and Settings\"
+   Else
+	  $uPath = "C:\Users\"
+   EndIf
 
    $usr = FileFindFirstFile($uPath & "*.*")
    While $usr
@@ -4059,6 +2738,7 @@ Func bwsr_webcache()
 		 If @error then ExitLoop
 	  $uDir = $uPath & $profs
 	  $uATB = FileGetAttrib($uDir)
+	  If Not FileExists($BrowserDir & $profs) Then DirCreate($BrowserDir & $profs)
 	  If StringInStr($uATB, "D") Then
 		 If Not FileExists($BrowserDir & $profs & '\IE') Then DirCreate($BrowserDir & $profs & '\IE')
 		 If FileExists($uDir & "\AppData\Local\Microsoft\Windows\WebCache\WebCacheV01.dat") Then bwsr_webcache_hobocopy($uDir & "\AppData\Local\Microsoft\Windows\WebCache", $profs)
@@ -4111,17 +2791,6 @@ Func ProgChkCount()						;Count number of functions executing for GUI Progress B
    If (GUICtrlRead($VS_SOFTREG_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($VS_USERREG_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($sysint_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($IPs_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($DNS_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($ARP_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($NBT_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($Routes_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($UsrInfo_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($CONN_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($Sessions_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($nShare_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($nFiles_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($WrkgrpPC_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($Sys_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($Proc_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($Serv_chk) = 1) Then $p_chkc = $p_chkc + 1
@@ -4141,26 +2810,6 @@ Func ProgChkCount()						;Count number of functions executing for GUI Progress B
    If (GUICtrlRead($sha1_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($compress_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($AutorunVTEnabled_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($ProcexpVTEnabled_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($dcInfo_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_tz_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_usr_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_model_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_warranty_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_nic_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_manu_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_software_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_evt_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_proc_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_job_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_startup_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_domain_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_service_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_bios_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_hd_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_share_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_hotfix_chk) = 1) Then $p_chkc = $p_chkc + 1
-   If (GUICtrlRead($wmi_prodkey_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($bwsr_cache_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($bwsr_password_chk) = 1) Then $p_chkc = $p_chkc + 1
    If (GUICtrlRead($bwsr_hist_chk) = 1) Then $p_chkc = $p_chkc + 1
@@ -4199,17 +2848,6 @@ Func SelectAll()						;Function to select all functions within a GUI
    GUICtrlSetState($VS_SOFTREG_chk, $GUI_CHECKED)
    GUICtrlSetState($VS_USERREG_chk, $GUI_CHECKED)
    GUICtrlSetState($sysint_chk, $GUI_CHECKED)
-   GUICtrlSetState($IPs_chk, $GUI_CHECKED)
-   GUICtrlSetState($DNS_chk, $GUI_CHECKED)
-   GUICtrlSetState($ARP_chk, $GUI_CHECKED)
-   GUICtrlSetState($NBT_chk, $GUI_CHECKED)
-   GUICtrlSetState($Routes_chk, $GUI_CHECKED)
-   GUICtrlSetState($UsrInfo_chk, $GUI_CHECKED)
-   GUICtrlSetState($CONN_chk, $GUI_CHECKED)
-   GUICtrlSetState($Sessions_chk, $GUI_CHECKED)
-   GUICtrlSetState($nShare_chk, $GUI_CHECKED)
-   GUICtrlSetState($nFiles_chk, $GUI_CHECKED)
-   GUICtrlSetState($WrkgrpPC_chk, $GUI_CHECKED)
    GUICtrlSetState($Sys_chk, $GUI_CHECKED)
    GUICtrlSetState($srum_chk, $GUI_CHECKED)
    GUICtrlSetState($Proc_chk, $GUI_CHECKED)
@@ -4230,26 +2868,6 @@ Func SelectAll()						;Function to select all functions within a GUI
    GUICtrlSetState($compress_chk, $GUI_CHECKED)
    ;ZF added
    GUICtrlSetState($AutorunVTEnabled_chk, $GUI_CHECKED)
-   GUICtrlSetState($ProcexpVTEnabled_chk, $GUI_CHECKED)
-   GUICtrlSetState($dcInfo_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_tz_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_usr_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_model_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_warranty_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_nic_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_manu_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_software_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_evt_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_proc_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_job_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_startup_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_domain_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_service_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_bios_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_hd_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_share_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_hotfix_chk, $GUI_CHECKED)
-   GUICtrlSetState($wmi_prodkey_chk, $GUI_CHECKED)
    GUICtrlSetState($bwsr_cache_chk, $GUI_CHECKED)
    GUICtrlSetState($bwsr_password_chk, $GUI_CHECKED)
    GUICtrlSetState($bwsr_hist_chk, $GUI_CHECKED)
@@ -4261,8 +2879,6 @@ Func SelectAll()						;Function to select all functions within a GUI
 EndFunc
 
 Func SelectNone()						;Function to deselect all functions within the GUI
-
-   GUICtrlSetState($MemDmp_chk, $GUI_UNCHECKED)
    GUICtrlSetState($PF_chk, $GUI_UNCHECKED)
    GUICtrlSetState($RF_chk, $GUI_UNCHECKED)
    GUICtrlSetState($JmpLst_chk, $GUI_UNCHECKED)
@@ -4288,17 +2904,6 @@ Func SelectNone()						;Function to deselect all functions within the GUI
    GUICtrlSetState($VS_SOFTREG_chk, $GUI_UNCHECKED)
    GUICtrlSetState($VS_USERREG_chk, $GUI_UNCHECKED)
    GUICtrlSetState($sysint_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($IPs_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($DNS_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($ARP_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($NBT_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($Routes_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($UsrInfo_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($CONN_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($Sessions_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($nShare_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($nFiles_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($WrkgrpPC_chk, $GUI_UNCHECKED)
    GUICtrlSetState($Sys_chk, $GUI_UNCHECKED)
    GUICtrlSetState($srum_chk, $GUI_UNCHECKED)
    GUICtrlSetState($Proc_chk, $GUI_UNCHECKED)
@@ -4319,26 +2924,6 @@ Func SelectNone()						;Function to deselect all functions within the GUI
    GUICtrlSetState($compress_chk, $GUI_UNCHECKED)
    ;ZF added
    GUICtrlSetState($AutorunVTEnabled_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($ProcexpVTEnabled_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($dcInfo_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_tz_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_usr_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_model_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_warranty_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_nic_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_manu_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_software_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_evt_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_proc_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_job_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_startup_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_domain_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_service_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_bios_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_hd_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_share_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_hotfix_chk, $GUI_UNCHECKED)
-   GUICtrlSetState($wmi_prodkey_chk, $GUI_UNCHECKED)
    GUICtrlSetState($bwsr_cache_chk, $GUI_UNCHECKED)
    GUICtrlSetState($bwsr_password_chk, $GUI_UNCHECKED)
    GUICtrlSetState($bwsr_hist_chk, $GUI_UNCHECKED)
