@@ -72,7 +72,7 @@ python OUTPUT_autorunMerge.py -d TRIAGEOUTPUT -p PROJECTNAME
 
 python OUTPUT_cveChecker.py -p PROJECTNAME
 
-python OUTPUT_cveChecker.py -p PROJECTNAME -t <Image Name>
+python OUTPUT_cveChecker.py -p PROJECTNAME -t IMAGENAME
 
 python OUTPUT_baselineCSV.py -p PROJECTNAME
 
