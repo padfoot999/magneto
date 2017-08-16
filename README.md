@@ -34,32 +34,45 @@ install Regexp::Common::time
 ### Triage Post-Processing
 
 #### Proposed Workflow
-1 ) Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Save the output into the Evidence folder within each Incident folder.
+1 ) Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. 
+Save the output into the Evidence folder within each Incident folder.
 
 2 ) Process Event Logs using Windows Powershell (WINTEL.ps1) file.
 
-cd <Magneto WINTEL folder>
-.\WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project <Project Name>
+In a powershell console
+
+WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project <Project Name>
 
 3 ) Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
 
 python PROCESS_postTriage.py -d <Path to Incident folder> -p <Project Name>
 
-4 ) Run submit.py file
+4 ) Run submit.py 
 
 python submit.py -d <Path to Incident folder> -p <Project Name>
 
 5 ) Generate output (as required)
 
 python OUTPUT_summary.py -d <Path to Incident folder> -r <Output folder after running PROCESS_postTriage.py> -p <Project Name>
+
 python OUTPUT_timeline.py -d <Path to Incident folder>  -p <Project Name> -s <Number of workbooks to split>
+
 python OUTPUT_baselineCSV.py -p <Project Name>
+
 python OUTPUT_baselineXLSX.py -p <Project Name>
+
 python OUTPUT_processDifference.py -p <Project Name>  
+
 python OUTPUT_processNetworkConn.py -p <Project Name>  
+
 python OUTPUT_autorunMerge.py -d <Path to Incident folder> -p <Project Name>  
+
 python OUTPUT_cveChecker.py -p <Project Name>
+
 python OUTPUT_cveChecker.py -p <Project Name> -t <Image Name>
+
 python OUTPUT_baselineCSV.py -p <Project Name>
+
 python OUTPUT_baselineXLSX.py -p <Project Name>
+
 python OUTPUT_processDifference.py -p <Project Name>  
