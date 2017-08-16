@@ -24,8 +24,8 @@ Global 	$tools = '"' &@ScriptDir & '\Tools\'
 Global	$shell = '"' & @ScriptDir & '\Tools\cmd.exe"'
 Global 	$shellex = '"' & @ScriptDir & '\Tools\cmd.exe" /c'
 
-;KPMG Logo Image
-Global	$image = "kpmgicon.jpg"
+;Logo Image
+Global  $image = "zf.jpg"
 
 ;ZFZF: How is this used?
 Global 	$RecentPath = RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders", "Recent")
@@ -104,11 +104,11 @@ Func TriageGUI()						;Creates a graphical user interface for Triage
 
 	  GUICtrlCreateTabItem("System Information")
 
-		 $AutoRun_chk = GUICtrlCreateCheckbox("AutoRun Information", 10, 90)
+		 ;$AutoRun_chk = GUICtrlCreateCheckbox("AutoRun Information", 10, 90)
 			GUICtrlSetTip($AutoRun_chk, "Gather information about system start-up.  Often a source of persistence for intrusions.")
-		 $AutoRun_Target_chk = GUICtrlCreateCheckbox("Collect AutoRun Target Files", 10, 110)
+		 ;$AutoRun_Target_chk = GUICtrlCreateCheckbox("Collect AutoRun Target Files", 10, 110)
 			GUICtrlSetTip($AutoRun_Target_chk, "Gather all Autorun Target files on the system.")
-		 $srum_chk = GUICtrlCreateCheckbox("System Resource Utilization Manager (SRUM) Information", 10, 130)
+		 $srum_chk = GUICtrlCreateCheckbox("System Resource Utilization Manager (SRUM) Information", 10, 90)
 			GUICtrlSetTip($srum_chk, "Collect SRUM.dat from computer and outputs XLSX file.")
 
 	  GUICtrlCreateTabItem("Registry")
@@ -1181,7 +1181,6 @@ Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
    WEnd
 
    _FileReadToArray($filename, $csv)
-   _ArrayDisplay($csv, "test")
    Local $prefetchDict = ObjCreate("Scripting.Dictionary")
    If IsArray($csv) Then
 	  For $i = 1 To $csv[0]
@@ -1204,7 +1203,6 @@ Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
    EndIf
 
    Local $dictKeys = $prefetchDict.Keys
-   _ArrayDisplay($dictKeys, "test")
    If Not FileExists($EvDir & "\Prefetch\Files") Then DirCreate($EvDir & "\Prefetch\Files")
    For $i = 0 To $prefetchDict.Count - 1
 	  Local $fullPath = $dictKeys[$i]
@@ -1584,28 +1582,34 @@ EndFunc
 Func SystemRRip()						;Copy the SYSTEM HIV for analysis
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $sysrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SYSTEM /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SYSTEM_RoboCopy.txt"'
-   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SOFTWARE' & '" "SYSTEM_' & $evidenceName & '.hiv"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SYSTEM' & '" "SYSTEM_' & $evidenceName & '.hiv"'
 
    RunWait($sysrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $sysrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func SecurityRRip()						;Copy the SECURITY HIV for analysis
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $secrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SECURITY /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SECURITY_RoboCopy.txt"'
-   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SOFTWARE' & '" "SECURITY_' & $evidenceName & '.hiv"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SECURITY' & '" "SECURITY_' & $evidenceName & '.hiv"'
 
    RunWait($secrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $secrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func SAMRRip()							;Copy the SAM HIV for analysis
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $samrip = $robocopy & ' "' & $evidencePath & 'Windows\System32\config" "' & $RptsDir & '\Evidence" SAM /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $LogsDir & 'SAM_RoboCopy.txt"'
-   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SOFTWARE' & '" "SAM_' & $evidenceName & '.hiv"'
+   Local $rename = @ComSpec & ' /c rename "' & $RptsDir & '\Evidence\SAM' & '" "SAM_' & $evidenceName & '.hiv"'
 
    RunWait($samrip, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $samrip & @CRLF)
+   RunWait($rename, "", @SW_HIDE)
+	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
 EndFunc
 
 Func SoftwareRRip()						;Copy the SOFTWARE HIV for analysis
@@ -1658,7 +1662,6 @@ Func NTUserRRip()						;Copy all NTUSER.dat files from each profile
 	  For $i = 0 To UBound($aLines) - 1
 		 $s_Val = $aLines[$i]
 		 $s_Val = StringStripWS($s_Val, 2)
-		 _ArrayDisplay($s_Val, "test")
 		 Local $nturip
 		 $h_Proc = Run(@ComSpec & " /c " & 'REG QUERY "HKEY_LOCAL_MACHINE\TempHive\Microsoft\Windows NT\CurrentVersion\ProfileList\' & $s_Val & '" /v ProfileImagePath', "", @SW_MAXIMIZE, 0x02)
 		 $s_Out = ""
@@ -1769,11 +1772,11 @@ Func EvtCopy()							;Copy all event logs from local machine
    If @OSVersion = "WIN_10" Then $OS = "Users"
 
    If Not FileExists($evidencePath & "\Users") Then
-	  $evtdir = '"C:\Windows\system32\config"'
+	  $evtdir = '"' & $evidencePath & '\Windows\system32\config"'
 	  $evtext = "evt"
 	  $EvtCmd = $robocopy & " " & $evtdir & ' "' & $LogDir & '" *.' & $evtext & ' /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
    Else
-	  $evtdir = '"C:\Windows\system32\winevt\Logs"'
+	  $evtdir = '"' & $evidencePath & '\Windows\system32\winevt\Logs"'
 	  $evtext = "evtx"
 	  $EvtCmd = $robo7 & " " & $evtdir & ' "' & $LogDir & '" /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
    EndIf
