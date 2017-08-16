@@ -41,38 +41,41 @@ Save the output into the Evidence folder within each Incident folder.
 
 In a powershell console
 
-WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project <Project Name>
+WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
 
 3 ) Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
 
-python PROCESS_postTriage.py -d <Path to Incident folder> -p <Project Name>
+python PROCESS_postTriage.py -d TRIAGEOUTPUT -p PROJECTNAME
 
 4 ) Run submit.py 
 
-python submit.py -d <Path to Incident folder> -p <Project Name>
+python submit.py -d TRIAGEOUTPUT -p PROJECTNAME
 
 5 ) Generate output (as required)
 
-python OUTPUT_summary.py -d <Path to Incident folder> -r <Output folder after running PROCESS_postTriage.py> -p <Project Name>
+python OUTPUT_summary.py -d TRIAGEOUTPUT -r OUTPUT_PATH -p PROJECTNAME
 
-python OUTPUT_timeline.py -d <Path to Incident folder>  -p <Project Name> -s <Number of workbooks to split>
+python OUTPUT_timeline.py -d TRIAGEOUTPUT  -p PROJECTNAME -s SPLIT_COUNT
 
-python OUTPUT_baselineCSV.py -p <Project Name>
+e.g python OUTPUT_timeline.py -d "200910111112 HOSTNAME Incident" -p BUBU -s 3
+timeline output will be saved in folder "BUBU" and will be split equally into 3 parts
 
-python OUTPUT_baselineXLSX.py -p <Project Name>
+python OUTPUT_baselineCSV.py -p PROJECTNAME
 
-python OUTPUT_processDifference.py -p <Project Name>  
+python OUTPUT_baselineXLSX.py -p PROJECTNAME
 
-python OUTPUT_processNetworkConn.py -p <Project Name>  
+python OUTPUT_processDifference.py -p PROJECTNAME  
 
-python OUTPUT_autorunMerge.py -d <Path to Incident folder> -p <Project Name>  
+python OUTPUT_processNetworkConn.py -p PROJECTNAME  
 
-python OUTPUT_cveChecker.py -p <Project Name>
+python OUTPUT_autorunMerge.py -d TRIAGEOUTPUT -p PROJECTNAME  
 
-python OUTPUT_cveChecker.py -p <Project Name> -t <Image Name>
+python OUTPUT_cveChecker.py -p PROJECTNAME
 
-python OUTPUT_baselineCSV.py -p <Project Name>
+python OUTPUT_cveChecker.py -p PROJECTNAME -t <Image Name>
 
-python OUTPUT_baselineXLSX.py -p <Project Name>
+python OUTPUT_baselineCSV.py -p PROJECTNAME
 
-python OUTPUT_processDifference.py -p <Project Name>  
+python OUTPUT_baselineXLSX.py -p PROJECTNAME
+
+python OUTPUT_processDifference.py -p PROJECTNAME  
