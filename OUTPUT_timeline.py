@@ -104,11 +104,11 @@ def outputTimeline(directory, projectname, results, split):
 			logs = pd.read_csv(rawFile)
 			logs_final = pd.DataFrame()
 			try:
-				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.date.astype(str)
-				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %H:%M:%S %p").dt.time.astype(str)
+				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %I:%M:%S %p").dt.date.astype(str)
+				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %I:%M:%S %p").dt.strftime('%H:%M:%S')
 			except:
-				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %H:%M:%S %p").dt.date.astype(str)
-				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %H:%M:%S %p").dt.time.astype(str)
+				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %I:%M:%S %p").dt.date.astype(str)
+				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %I:%M:%S %p").dt.strftime('%H:%M:%S')
 			logs_final['MACB'] = "..C."
 			logs_final['Source'] = "EVT"
 			logs_final['Source_Type'] = "WinEvt"
