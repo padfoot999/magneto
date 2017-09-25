@@ -1919,6 +1919,8 @@ Func RecentFolder()						;Send information to the recent folder copy function
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -1956,6 +1958,8 @@ Func _RobocopyRF($path, $output)		;Copy Recent folder from all profiles while ma
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If Not FileExists($EvDir & '\Recent LNKs\' & $output) Then DirCreate($EvDir & '\Recent LNKs\' & $output)
 
@@ -1999,6 +2003,10 @@ Func JumpLists()						;Provide info to the Jumplist copy function
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2008" Then $OS = "Users"
+   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2066,6 +2074,8 @@ Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2189,6 +2199,8 @@ Func RecentFolder_Target()						;Send information to the recent folder copy func
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2226,6 +2238,8 @@ Func _RobocopyRFTgt($path, $output)		;Copy Recent folder from all profiles while
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
 	  If $OS = "Users" Then
 			$recPATH = $path & '\AppData\Roaming\Microsoft\Windows\Recent'
@@ -2279,6 +2293,8 @@ Func JumpLists_Target()						;Provide info to the Jumplist copy function
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2316,6 +2332,8 @@ Func _RobocopyJLTgt($path, $output)		;Copy Jumplist information while maintainin
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If Not FileExists($autodest & "\Files") Then DirCreate($autodest & "\Files")
    If Not FileExists($customdest & "\Files") Then DirCreate($customdest & "\Files")
@@ -2503,41 +2521,50 @@ Func NTUserRRip()						;Copy all NTUSER.dat files from each profile
    $aLines = StringRegExp($s_Out, "(?m:^)HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\(S-1-5-21-\d*-\d*-\d*-\S*)",3)
    ;_ArrayDisplay($aLines, "test")
 
-   If Not @error Then
+   If Not @error And IsArray($aLines) Then
 	  For $i = 0 To UBound($aLines) - 1
 		 $s_Val = $aLines[$i]
 		 $s_Val = StringStripWS($s_Val, 2)
-		 _ArrayDisplay($s_Val, "test")
 		 Local $nturip
 		 $h_Proc = Run(@ComSpec & " /c " & 'REG QUERY "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\' & $s_Val & '" /v ProfileImagePath', "", @SW_HIDE, 0x08)
-		 $s_Out = ""
-		 While 1
-			$sTemp = StdoutRead($h_Proc)
-			$s_Out &= $sTemp
-			If @error Then ExitLoop
-		 WEnd
-		 $aPath = StringRegExp($s_Out, "REG_EXPAND_SZ\s*([\S]*)",1)[0]
-		 If FileExists ($aPath & '\NTUSER.DAT') Then
-			Local $cmd = $robocopy & ' ' & $aPath & ' "' & $RptsDir & '\Evidence" NTUSER.DAT /r:1 /w:3 /log+:"' & $EvDir & 'NTUSER Log Copy.txt"'
-			Local $test = RunWait($cmd, "", @SW_HIDE, 0x08)
-			FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $cmd & @CRLF)
-
-			$sFileOld = $EvDir & 'NTUSER.DAT'
-			$sFileRenamed = $EvDir & @ComputerName &'_USER_' & $ntuserCount & '.dat'
-			Local $mov = FileMove($sFileOld, $sFileRenamed)
-
-			If $mov = 0 Then
-			    Local $hkcurip
-			   If @OSVersion = "WIN_XP" Then
-				  $hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat"'
-			   Else
-				  $hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat" /y'
-			   EndIf
-			   RunWait($hkcurip, "", @SW_HIDE)
+		 If Not @error Then
+			$s_Out = ""
+			While 1
+			   $sTemp = StdoutRead($h_Proc)
+			   $s_Out &= $sTemp
+			   If @error Then ExitLoop
+			WEnd
+			If StringRegExp($s_Out, "REG_EXPAND_SZ\s*(.*)",0) Then
+			   $aPath = StringRegExp($s_Out, "REG_EXPAND_SZ\s*(.*)",1)
+			Else
+			   $aPath = StringRegExp($s_Out, "REG_SZ\s*(.*)",1)
 			EndIf
+			If IsArray($aPath) Then
+			   $aPath = $aPath[0]
+			   $aPath = StringStripWS($aPath, 2)
+			   If FileExists ($aPath & '\NTUSER.DAT') Then
+				  Local $cmd = $robocopy & ' ' & $aPath & ' "' & $RptsDir & '\Evidence" NTUSER.DAT /r:1 /w:3 /log+:"' & $EvDir & 'NTUSER Log Copy.txt"'
+				  Local $test = RunWait($cmd, "", @SW_HIDE, 0x08)
+				  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $cmd & @CRLF)
 
-			FileWriteLine($usrFile, "HKEY_USERS\"&$s_Val&":USER_"&$ntuserCount&@CRLF)
-			$ntuserCount = $ntuserCount + 1
+				  $sFileOld = $EvDir & 'NTUSER.DAT'
+				  $sFileRenamed = $EvDir & @ComputerName &'_USER_' & $ntuserCount & '.dat'
+				  Local $mov = FileMove($sFileOld, $sFileRenamed)
+
+				  If $mov = 0 Then
+					  Local $hkcurip
+					 If @OSVersion = "WIN_XP" Then
+						$hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat"'
+					 Else
+						$hkcurip = $shellex & ' REG SAVE HKEY_USERS\' & $s_Val & ' "' & $EvDir & '\' & @ComputerName &'_USER_' & $ntuserCount & '.dat" /y'
+					 EndIf
+					 RunWait($hkcurip, "", @SW_HIDE)
+				  EndIf
+
+				  FileWriteLine($usrFile, "HKEY_USERS\"&$s_Val&":USER_"&$ntuserCount&@CRLF)
+				  $ntuserCount = $ntuserCount + 1
+			   EndIf
+			EndIf
 		 EndIf
 	  Next
    EndIf
@@ -2547,7 +2574,8 @@ EndFunc
 Func UsrclassE()  						;Search for profiles and initiate the copy of USRCLASS.dat
    FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Currently Executing: 14. UsrClass.dat" & @CRLF)
 
-   Local $OS, $uPath, $usr, $profs, $uDir, $uPath, $uATB
+   Local $OS = "Users"
+   Local $uPath, $usr, $profs, $uDir, $uPath, $uATB
 
    If @OSVersion = "WIN_7" Then $OS = "Users"
    If @OSVersion = "WIN_XP" Then $OS = "Docs"
@@ -2559,6 +2587,8 @@ Func UsrclassE()  						;Search for profiles and initiate the copy of USRCLASS.d
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -2741,6 +2771,8 @@ Func VSC_RobocopyRF($path, $output, $vrfc)		;Copy Recent folder from all profile
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If Not FileExists($EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output) Then DirCreate($EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output)
 
@@ -2804,6 +2836,8 @@ Func VSC_RobocopyJL($path, $output, $vjlc)		;Copy Jumplist information while mai
    If @OSVersion = "WIN_7" Then $OS = "Users"
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2922,6 +2956,8 @@ Func VSC_RobocopyNTU($path, $output, $vntc)	;Copy function for NTUSER.DAT (Volum
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If Not FileExists($ntudest) Then DirCreate($ntudest)
 
@@ -3294,6 +3330,7 @@ Func EvtCopy()							;Copy all event logs from local machine
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Docs" Then $evtdir = '"C:\Windows\system32\config"'
    If $OS = "Users" Then $evtdir = '"C:\Windows\system32\winevt\Logs"'
@@ -3539,6 +3576,8 @@ Func bwsr_cache()						;Send information to the recent folder copy function
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3578,6 +3617,8 @@ Func mozilla_cache($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -3613,6 +3654,8 @@ Func ie_cache($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Microsoft\Windows\WebCache"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Local Settings\Temporary Internet Files"
@@ -3638,6 +3681,8 @@ Func chrome_cache($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\Default\Cache"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\Default\Cache"
@@ -3690,6 +3735,8 @@ Func bwsr_fav()
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3726,6 +3773,8 @@ Func mozilla_fav($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
@@ -3766,6 +3815,8 @@ Func chrome_fav($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -3816,6 +3867,8 @@ Func bwsr_cookies()						;Send information to the recent folder copy function
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3852,6 +3905,8 @@ Func mozilla_cookies($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -3898,6 +3953,8 @@ Func chrome_cookies($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -3948,6 +4005,8 @@ Func bwsr_dl()						;Send information to the recent folder copy function
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3984,6 +4043,8 @@ Func mozilla_download($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -4013,6 +4074,8 @@ Func chrome_download($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -4063,6 +4126,8 @@ Func bwsr_autocomplete()						;Send information to the recent folder copy functi
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -4099,6 +4164,8 @@ Func mozilla_autocomplete($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -4128,6 +4195,8 @@ Func chrome_autocomplete($uDir, $profs)
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -4181,6 +4250,8 @@ Func bwsr_webcache()
    If @OSVersion = "WIN_8" Then $OS = "Users"
    If @OSVersion = "WIN_81" Then $OS = "Users"
    If @OSVersion = "WIN_10" Then $OS = "Users"
+   If @OSVersion = "WIN_2012" Then $OS = "Users"
+   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
