@@ -1,81 +1,60 @@
-# magneto
-Incident response and forensic tool
+#magneto
+
+##Incident response and forensic tool
 
 Thank you for your interest. Please contact author for other essential files required to run this tool.
 
 Features: 
-1 ) Parse and process triage output files, saving them in pgsql 
-2 ) Process memory captures using volatility 
-3 ) Parse and process volatility output files, saving them in pgsql 
-4 ) Perform baseline, long tail analysis and correlation using above data, stored in pgsql
+ 1. Parse and process triage output files, saving them in pgsql
+ 2. Process memory captures using volatility
+ 3. Parse and process volatility output files, saving them in pgsql
+ 4. Perform baseline, long tail analysis and correlation using above data, stored in pgsql
 
-### Step by Step Guide to power up MAGNETO on Windows
+## Step by Step Guide to power up MAGNETO on Windows
 
-1. Download Magneto Files from "https://github.com/padfoot999/magneto"
-2. Install Python 2.7 (32 bit)
-3. Configure Python Path in Windows System Environment Variables
+1. Download Magneto Files
+
+2. Install Python 2.7 (32 bit).  Remember to check the box to configure Python Path in Windows System Environment Variables, or do it yourself.
+
+7. Install all necessary python modules using pip.
+
+	C:\Python27\Scripts\pip.exe install argparse bs4 chardet fuzzywuzzy netaddr numpy openpyxl pandas psycopg2 requests scandir sqlalchemy stem win_inet_pton xlrd xlwings
+
 4. Install PostgreSQL
-5. Go to PGAdmin, create server with the following setting
-        <br />Name: "magneto"
-        <br />Host name/Add: "127.0.0.1"
-        <br />User name: postgres
-        <br />Password: password
-6. After creating server, create database "magneto"
-7. Install all necessary python modules (i.e. Pandas, psycopg2) using pip (C:\Python27\Scripts). Refer to requirements.txt for full list of dependencies.
-8. Make sure that workstation has Powershell v4.0 and above installed
-9. Install strawberry perl 
-http://strawberryperl.com/
-10. Open command prompt and type: 
-cpan
-install Parse::Win32Registry
-install Regexp::Common
-install Regexp::Common::time
 
-### Triage Post-Processing
+	Database admin account: postgres
+	Password: (set your own password)
 
-#### Proposed Workflow
-1 ) Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. 
-Save the output into the Evidence folder within each Incident folder.
+5. Launch pgadmin and connect to local PostgreSQL server on 127.0.0.1.  Create database "magneto"
 
-2 ) Process Event Logs using Windows Powershell (WINTEL.ps1) file.
+8. Make sure that workstation has Powershell v4.0 and above installed, follow this [table](https://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx#Windows_Management_Framework_4_supportability_matrix).
 
-In a powershell console
+9. Install [Strawberry Perl](http://strawberryperl.com/).
 
-WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
+10. Install Perl modules by typing command prompt:
 
-3 ) Run PROCESS_postTriage File (Outputs RegRipper, SRUM-DUMP, WebCache Files, MFT, JLECMD TSV File)
+	cpan
+	install Parse::Win32Registry Regexp::Common Regexp::Common::time
 
-python PROCESS_postTriage.py -d TRIAGEOUTPUT -p PROJECTNAME
+## Triage Post-Processing
 
-4 ) Run submit.py 
+#### Suggested Steps
 
-python submit.py -d TRIAGEOUTPUT -p PROJECTNAME
+1. Launch Ubuntu VM and process Memory (.raw) file using PROCESS_memory.py file. Save the output into the Evidence folder within each Incident folder.
 
-5 ) Generate output (as required)
+2. Process Event Logs using Windows Powershell (WINTEL.ps1) file by running this in a powershell console:
 
-python OUTPUT_summary.py -d TRIAGEOUTPUT -r OUTPUT_PATH -p PROJECTNAME
+	WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
 
-python OUTPUT_timeline.py -d TRIAGEOUTPUT  -p PROJECTNAME -s SPLIT_COUNT
+3. Run submit.py
 
-e.g python OUTPUT_timeline.py -d "200910111112 HOSTNAME Incident" -p BUBU -s 3
-timeline output will be saved in folder "BUBU" and will be split equally into 3 parts
+	python submit.py -d c:\path\to\parent\ -p PROJECTNAME
+	OR
+	python submit.py -d c:\path\to\parent\individual_triages -p PROJECTNAME
 
-python OUTPUT_baselineCSV.py -p PROJECTNAME
+4. Generate output (as required)
 
-python OUTPUT_baselineXLSX.py -p PROJECTNAME
-
-python OUTPUT_processDifference.py -p PROJECTNAME  
-
-python OUTPUT_processNetworkConn.py -p PROJECTNAME  
-
-python OUTPUT_autorunMerge.py -d TRIAGEOUTPUT -p PROJECTNAME  
-
-python OUTPUT_cveChecker.py -p PROJECTNAME
-
-python OUTPUT_cveChecker.py -p PROJECTNAME -t IMAGENAME
-
-python OUTPUT_baselineCSV.py -p PROJECTNAME
-
-python OUTPUT_baselineXLSX.py -p PROJECTNAME
-
-python OUTPUT_processDifference.py -p PROJECTNAME  
+	python OUTPUT_baselineCSV.py -p PROJECTNAME
+	python OUTPUT_baselineXLSM.py -p PROJECTNAME
+	python OUTPUT_baselineXLSX.py -p PROJECTNAME
+	and other OUTPUT_* python modules
