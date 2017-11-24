@@ -48,9 +48,9 @@ install Parse::Win32Registry Regexp::Common Regexp::Common::time
 setx PERL5LIB c:\path\to\magneto\Tools\RegRipper
 ```
 
-10. Download the NVD XML 2.0 Schema feeds from NIST according to nvd_cache/README.TXT and unzip them in nvd_cache
+10. Download the [NVD XML 2.0 Schema feeds from NIST](https://nvd.nist.gov/vuln/data-feeds#CVE_FEED) and unzip them in nvd_cache
 
-11. Download the NirLauncher Package according to Tools/nirsoft_package/README.TXT and unzip in Tools/nirsoft_package
+11. Download the [NirLauncher Package](http://launcher.nirsoft.net/downloads/) and unzip in Tools/nirsoft_package
 
 12. Download [sleuthkit](https://github.com/sleuthkit/sleuthkit/releases) and unzip at Tools/sleuthkit
 
