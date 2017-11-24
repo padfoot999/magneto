@@ -1,6 +1,6 @@
-#magneto
+# magneto
 
-##Incident response and forensic tool
+## Incident response and forensic tool
 
 Thank you for your interest. Please contact author for other essential files required to run this tool.
 
@@ -16,25 +16,31 @@ Features:
 
 2. Install Python 2.7 (32 bit).  Remember to check the box to configure Python Path in Windows System Environment Variables, or do it yourself.
 
-7. Install all necessary python modules using pip.
+3. Install all necessary python modules using pip.
 
-	C:\Python27\Scripts\pip.exe install argparse bs4 chardet fuzzywuzzy netaddr numpy openpyxl pandas psycopg2 requests scandir sqlalchemy stem win_inet_pton xlrd xlwings
+```
+C:\Python27\Scripts\pip.exe install argparse bs4 chardet fuzzywuzzy netaddr numpy openpyxl pandas psycopg2 requests scandir sqlalchemy stem win_inet_pton xlrd xlwings
+```
 
 4. Install PostgreSQL
 
-	Database admin account: postgres
-	Password: (set your own password)
+```
+Database admin account: postgres
+Password: (set your own password)
+```
 
 5. Launch pgadmin and connect to local PostgreSQL server on 127.0.0.1.  Create database "magneto"
 
-8. Make sure that workstation has Powershell v4.0 and above installed, follow this [table](https://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx#Windows_Management_Framework_4_supportability_matrix).
+6. Make sure that workstation has Powershell v4.0 and above installed, follow this [table](https://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx#Windows_Management_Framework_4_supportability_matrix).
 
-9. Install [Strawberry Perl](http://strawberryperl.com/).
+7. Install [Strawberry Perl](http://strawberryperl.com/).
 
-10. Install Perl modules by typing command prompt:
+8. Install Perl modules by typing command prompt:
 
-	cpan
-	install Parse::Win32Registry Regexp::Common Regexp::Common::time
+```
+cpan
+install Parse::Win32Registry Regexp::Common Regexp::Common::time
+```
 
 ## Triage Post-Processing
 
@@ -44,17 +50,23 @@ Features:
 
 2. Process Event Logs using Windows Powershell (WINTEL.ps1) file by running this in a powershell console:
 
-	WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
+```
+WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
+```
 
 3. Run submit.py
 
-	python submit.py -d c:\path\to\parent\ -p PROJECTNAME
-	OR
-	python submit.py -d c:\path\to\parent\individual_triages -p PROJECTNAME
+```
+python submit.py -d c:\path\to\parent\ -p PROJECTNAME
+OR
+python submit.py -d c:\path\to\parent\individual_triages -p PROJECTNAME
+```
 
 4. Generate output (as required)
 
-	python OUTPUT_baselineCSV.py -p PROJECTNAME
-	python OUTPUT_baselineXLSM.py -p PROJECTNAME
-	python OUTPUT_baselineXLSX.py -p PROJECTNAME
-	and other OUTPUT_* python modules
+```
+python OUTPUT_baselineCSV.py -p PROJECTNAME
+python OUTPUT_baselineXLSM.py -p PROJECTNAME
+python OUTPUT_baselineXLSX.py -p PROJECTNAME
+and other OUTPUT_* python modules
+```
