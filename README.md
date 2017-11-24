@@ -48,6 +48,14 @@ install Parse::Win32Registry Regexp::Common Regexp::Common::time
 setx PERL5LIB c:\path\to\magneto\Tools\RegRipper
 ```
 
+10. Download the NVD XML 2.0 Schema feeds from NIST according to nvd_cache/README.TXT and unzip them in nvd_cache
+
+11. Download the NirLauncher Package according to Tools/nirsoft_package/README.TXT and unzip in Tools/nirsoft_package
+
+12. Download [sleuthkit](https://github.com/sleuthkit/sleuthkit/releases) and unzip at Tools/sleuthkit
+
+13. Download [srum-dump](https://github.com/MarkBaggett/srum-dump) and unzip at Tools/srum-dump
+
 ## Triage Post-Processing
 
 #### Suggested Steps

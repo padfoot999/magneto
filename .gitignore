@@ -9,3 +9,6 @@ Incident*.log
 
 /Tools/nirsoft_package/**/*
 !/Tools/nirsoft_package/README.TXT
+
+/Tools/sleuthkit/
+/Tools/srum-dump/
