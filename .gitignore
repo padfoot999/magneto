@@ -4,8 +4,8 @@
 /Results/
 Incident*.log
 
-/nvd_cache/*.zip
-/nvd_cache/*.meta
+/nvd_cache/*
+!/nvd_cache/README.TXT
 
 /Tools/nirsoft_package/**/*
 !/Tools/nirsoft_package/README.TXT
