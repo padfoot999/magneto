@@ -42,6 +42,12 @@ cpan
 install Parse::Win32Registry Regexp::Common Regexp::Common::time
 ```
 
+9. Configure the system environment variable PERL5LIB in command prompt:
+
+```
+setx PERL5LIB c:\path\to\magneto\Tools\RegRipper
+```
+
 ## Triage Post-Processing
 
 #### Suggested Steps
@@ -51,7 +57,7 @@ install Parse::Win32Registry Regexp::Common Regexp::Common::time
 2. Process Event Logs using Windows Powershell (WINTEL.ps1) file by running this in a powershell console:
 
 ```
-WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
+WINTEL_WindowsLogParser.ps1 -logPath c:\path\to\individual_triage\Evidence\Logs -project PROJECTNAME
 ```
 
 3. Run submit.py
@@ -59,7 +65,7 @@ WINTEL_WindowsLogParser.ps1 -logPath <...\Evidence\Logs)> -project PROJECTNAME
 ```
 python submit.py -d c:\path\to\parent\ -p PROJECTNAME
 OR
-python submit.py -d c:\path\to\parent\individual_triages -p PROJECTNAME
+python submit.py -d c:\path\to\parent\individual_triage -p PROJECTNAME
 ```
 
 4. Generate output (as required)
