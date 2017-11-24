@@ -1,0 +1,13 @@
+**/*.pyc
+**/*.exe
+
+/Results/
+Incident*.log
+
+/nvd_cache/*.zip
+/nvd_cache/*.meta
+
+/Tools/nirsoft_package/**/*
+!/Tools/nirsoft_package/README.TXT
+
+config.py
