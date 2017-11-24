@@ -107,7 +107,7 @@ def checkIpReputation(ip_addr = ''):
         return data
 
     except Exception as excptn:
-        print "ERROR: in checkIpReputation.  Returning empty report data structure.\n%s\n%s" % (type(excptn), excptn.args)
+        logger.error("ERROR: in checkIpReputation.  Returning empty report data structure.\n%s\n%s" % (type(excptn), excptn.args))
         # print "ERROR: in checkIpReputation.  soup structure is %s" % soup
         return EMPTY_REPORT
     else:
@@ -188,7 +188,7 @@ def ipChecker(databaseConnectionHandle, userInput):
                                         logging.info("INFO: insertBlacklistValue is " + str(insertBlacklistValue) + "\n")
                                         db.databaseInsert(databaseConnectionHandle, Schema, Table, insertBlacklistValue)
                                     else:
-                                        print "IP Address already blacklisted."
+                                        logger.debug("IP Address already blacklisted.")
 
                                     selectValue = {}
                                     getBlacklistData = db.databaseSelect(databaseConnectionHandle, Schema, Table, selectValue, whereValue)
@@ -198,13 +198,13 @@ def ipChecker(databaseConnectionHandle, userInput):
                                     logging.info("INFO: allBlacklisted is " + str(allBlacklisted) + "\n")
 
                                 else:
-                                    print "IP Address is not blacklisted."
+                                    logger.debug("IP Address is not blacklisted.")
                             except (ValueError, TypeError):
-                                print "ERROR: Unable to check if blacklisted."
+                                logger.error("ERROR: Unable to check if blacklisted.")
                         else:
-                            print "Blacklist Report not found."
+                            logger.debug("Blacklist Report not found.")
                     else:
-                        print "ERROR: Failed to retrieve blacklist results."
+                        logger.error("ERROR: Failed to retrieve blacklist results.")
 
         elif re.search('[a-zA-Z]', userInput):
             #if input is a hostname
@@ -309,7 +309,7 @@ def ipChecker(databaseConnectionHandle, userInput):
                                                         logging.info("INFO: insertBlacklistValue is " + str(insertBlacklistValue) + "\n")
                                                         db.databaseInsert(databaseConnectionHandle, Schema, Table, insertBlacklistValue)
                                                     else:
-                                                        print "IP Address already blacklisted."
+                                                        logger.debug("IP Address already blacklisted.")
 
                                                     selectValue = {}
                                                     getBlacklistData = db.databaseSelect(databaseConnectionHandle, Schema, Table, selectValue, whereValue)
@@ -319,23 +319,23 @@ def ipChecker(databaseConnectionHandle, userInput):
                                                     logging.info("INFO: allBlacklisted is " + str(allBlacklisted) + "\n")
 
                                                 else:
-                                                    print "IP Address is not blacklisted."
+                                                    logger.debug("IP Address is not blacklisted.")
                                             except (ValueError, TypeError):
-                                                print "ERROR: Unable to check if blacklisted."
+                                                logger.error("ERROR: Unable to check if blacklisted.")
                                         else:
-                                            print "Blacklist Report not found."
+                                            logger.debug("Blacklist Report not found.")
                                     else:
-                                        print "ERROR: Failed to retrieve blacklist results."
+                                        logger.error("ERROR: Failed to retrieve blacklist results.")
                     else:
                         "No IP addresses related to Hostname applicable for blacklist check."
 
             else:
                 #if hostname is not in database
-                print "ERROR: Hostname not in database."
+                logger.error("ERROR: Hostname not in database.")
 
         else:
             #if userInput is not an ip address or hostname
-            print "Please enter a valid input."
+            logger.error("Please enter a valid input.")
 
     else:
         #if no input is given
@@ -417,7 +417,7 @@ def ipChecker(databaseConnectionHandle, userInput):
                                         logging.info("INFO: insertBlacklistValue is " + str(insertBlacklistValue) + "\n")
                                         db.databaseInsert(databaseConnectionHandle, Schema, Table, insertBlacklistValue)
                                     else:
-                                        print "IP Address already blacklisted."
+                                        logger.debug("IP Address already blacklisted.")
 
                                     selectValue = {}
                                     getBlacklistData = db.databaseSelect(databaseConnectionHandle, Schema, Table, selectValue, whereValue)
@@ -428,13 +428,13 @@ def ipChecker(databaseConnectionHandle, userInput):
                                     counter += 1
 
                                 else:
-                                    print "IP Address is not blacklisted."
+                                    logger.debug("IP Address is not blacklisted.")
                             except (ValueError, TypeError):
-                                print "ERROR: Unable to check if blacklisted."
+                                logger.error("ERROR: Unable to check if blacklisted.")
                         else:
-                            print "Blacklist Report not found."
+                            logger.debug("Blacklist Report not found.")
                     else:
-                        print "ERROR: Failed to retrieve blacklist results."
+                        logger.error("ERROR: Failed to retrieve blacklist results.")
 
             # if x==20:
                 #for testing purposes

@@ -5,6 +5,8 @@ import struct
 import binascii
 import argparse
 import os
+import logging
+logger = logging.getLogger('root')
 
 def traverseDirectory(directory):
 	unprocessedlist = []
@@ -15,7 +17,7 @@ def traverseDirectory(directory):
 					unprocessedlist.append(os.path.join(root,filename))
 
 	for rawFile in unprocessedlist:
-		print rawFile
+		logger.debug(rawFile)
 		fixEventLog(rawFile)
 
 def fixEventLog(file):

@@ -175,7 +175,7 @@ def splitDelimitedLine(list, delimiter):
 # and does translation of elements based on TRANSLATION_DICT.  supports multiple translations per line.
 def translateLine(rawLine):
     if any(x in rawLine for x in TRANSLATION_DICT.keys()):
-        print "Translating"
+        logger.debug("Translating")
         for key in TRANSLATION_DICT.keys():
             if key in rawLine:
                 rawLine = [line.replace(key, TRANSLATION_DICT[key]) for line in rawLine]
@@ -184,12 +184,6 @@ def translateLine(rawLine):
         return rawLine
 
 
-#NAME: main
-#INPUT: NONE
-#OUTPUT: NONE
-#DESCRIPTION: Provide sample code to show how the functions are called.
-def main():
-    print "main"
     
 if __name__ == '__main__':
-	main()
+	pass

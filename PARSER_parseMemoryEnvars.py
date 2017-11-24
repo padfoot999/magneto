@@ -144,8 +144,8 @@ def parseAndPopulate(databaseConnectionHandle, filename):
             insertValue['pid'] = pid
         else:
             skip = True
-            print "ERROR: Problem processing the following line as pid field is NOT numeric :"
-            print str(temp)
+            logger.error("ERROR: Problem processing the following line as pid field is NOT numeric :")
+            logger.error(str(temp))
 
         if skip == False:
             Schema = "environment_variables"

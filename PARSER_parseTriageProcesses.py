@@ -80,7 +80,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
                     insertValue['pid'] = pid
             else:
                 logger.error("Processes: Problem processing the following line as pid field is NOT numeric :")
-                print str(temp)
+                logger.error(str(temp))
 
             insertValue['procname'] = procname
             insertValue['services'] = services
@@ -170,31 +170,31 @@ def parseAndPopulate(databaseConnectionHandle, filename):
                     insertValue['pid'] = pid
                 else:
                     logger.error("Processes: Problem processing the following line as pid field is NOT numeric :")
-                    print str(temp)
+                    logger.error(str(temp))
 
                 if pri.isdigit():
                     insertValue['pri'] = pri
                 else:
                     logger.error("Processes: Problem processing the following line as pri field is NOT numeric :")
-                    print str(temp)
+                    logger.error(str(temp))
 
                 if thd.isdigit():
                     insertValue['thd'] = thd
                 else:
                     logger.error("Processes: Problem processing the following line as thd field is NOT numeric :")
-                    print str(temp)
+                    logger.error(str(temp))
 
                 if hnd.isdigit():
                     insertValue['hnd'] = hnd
                 else:
                     logger.error("Processes: Problem processing the following line as hnd field is NOT numeric :")
-                    print str(temp)
+                    logger.error(str(temp))
 
                 if priv.isdigit():
                     insertValue['priv'] = priv
                 else:
                     logger.error("Processes: Problem processing the following line as priv field is NOT numeric :")
-                    print str(temp)
+                    logger.error(str(temp))
 
                 insertValue['cputime'] = str(cputime)
                 insertValue['elapsedtime'] = str(elapsedtime)

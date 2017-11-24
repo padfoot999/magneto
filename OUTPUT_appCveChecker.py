@@ -70,7 +70,7 @@ def checkHotfixCVE(dbEngine, appname):
     query2 = "SELECT * FROM sourcefiles.windows_patch_level"
     logger.info("query is "+query2+"\n")
     df2 = pd.read_sql(query2, dbEngine)
-    print df2
+    logger.debug(df2)
     #Filters for application vulnerabilities
     appVulnerabilities = pd.DataFrame()
     applist = []

@@ -285,6 +285,8 @@ sub processKey {
 			}
 		}
 	}
+
+	$workbook->close();
 	
 	if (scalar(@alerts) > 0) {
 		print "\n";

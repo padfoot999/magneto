@@ -11,6 +11,7 @@ import re
 import sys
 from openpyxl import Workbook, load_workbook
 
+# TODO xlwings has broken dependencies? win32api
 import xlwings as xw
 xwpath = xw.__path__
 from subprocess import check_output
@@ -378,7 +379,7 @@ def baseline(databaseConnectionHandle, project):
     #Read xlwings module for later insertion into Excel spreadsheet
     pathToXlWings = xwpath[0] + '\\xlwings.bas'
     with open (pathToXlWings, "r") as xlcode:
-        print('Reading Macro into string from: ' + str(xlcode))
+        logger.debug('Reading Macro into string from: ' + str(xlcode))
         macro=xlcode.read()
 
     #VBScript to listen to clicked hyperlink
@@ -394,7 +395,7 @@ def baseline(databaseConnectionHandle, project):
     com_instance.DisplayAlerts = False 
 
     for script_file in glob.glob(os.path.join(scripts_dir, "*.xlsm")):
-        print "Processing: %s" % script_file
+        logger.debug("Processing: %s" % script_file)
         (file_path, file_name) = os.path.split(script_file)
         objworkbook = com_instance.Workbooks.Open(script_file)
 

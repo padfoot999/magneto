@@ -544,7 +544,7 @@ def getWindowsUpdateListings():
 
         rowValues = sh.row_values(row)
         #if DEBUG_FLAG:
-        print row
+        logger.debug(row)
 
         newValues = {}
 
@@ -636,7 +636,7 @@ def insertWindowsPatchDetails(databaseConnectionHandle):
             try:
                 db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertwindowsUpdateValue)
             except psycopg2.Error as e:
-                    print "ERROR: Problem inserting into table due to " + str(e)
+                    logger.error("ERROR: Problem inserting into table due to " + str(e))
         else:
             #for each different CVE ID, insert entire set of information into database 
             for i in xrange(len(totalCve)):
@@ -645,7 +645,7 @@ def insertWindowsPatchDetails(databaseConnectionHandle):
                 try:
                     db.databaseExistInsert(databaseConnectionHandle, Schema, Table, insertwindowsUpdateValue)
                 except psycopg2.Error as e:
-                    print "ERROR: Problem inserting into table due to " + str(e)
+                    logger.error("ERROR: Problem inserting into table due to " + str(e))
 
 #NAME: main
 #INPUT: NONE

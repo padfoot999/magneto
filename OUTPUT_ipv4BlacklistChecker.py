@@ -54,11 +54,11 @@ def main(input_ipaddresslist):
 							str3 = str(str2.find("span").contents)[3:-2]
 							ips = {"Name":ip,"Status":str3}
 							writer.writerow([ips['Name'],ips['Status']])
-							print "Saving result for " + row[0]
+							logger.debug("Saving result for " + row[0])
 						except:
 							try:
 								c = soup.find('h1').contents
-								print str(c)[3:-2]
+								logger.debug(str(c)[3:-2])
 							except:
 								with open('%s.html' %count, "wb") as code:
 									code.write(str(soup))

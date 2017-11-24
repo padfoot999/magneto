@@ -923,11 +923,11 @@ def main():
         logger.debug('Reading Encase export file %s' % args.encase)
         with open(args.encase, 'rU') as f:
             reader = csv.DictReader(f)
-            print reader.fieldnames
+            logger.debug(reader.fieldnames)
             if len(reader.fieldnames) == 1:
                 f.seek(0)
                 reader = csv.DictReader(f, dialect = csv.excel_tab)
-                print reader.fieldnames
+                logger.debug(reader.fieldnames)
             counter = 0
             for row in reader:
                 if 'Full Path' in row:

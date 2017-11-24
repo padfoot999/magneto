@@ -90,7 +90,7 @@ def postTriage(directory,projectname):
 				except:
 					logging.error("Unable to create results folder")
 					sys.exit()
-			os.chdir('.\Tools\\nirsoft_package\\NirSoft')
+			os.chdir('./Tools/nirsoft_package/NirSoft')
 			subprocess.call(['esedatabaseview.exe','/table', rawFile, '*', '/scomma', outputfiles])
 			os.chdir(currentWorkingDirectory)
 

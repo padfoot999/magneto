@@ -35,7 +35,7 @@ def shortconcat(row):
 		event_desc = re.match("(.*)\n", row['Message']).group(1)
 	except:
 		event_desc = str(row['Message'])
-	print event_desc
+	logger.debug(event_desc)
 	val = "Event ID:" + str(row['Id']) + " " + event_desc
 	return val
 
@@ -75,12 +75,12 @@ def outputTimeline(directory, projectname, results, split):
 	timeline_merged_column = ['Date','Time','MACB','Source','Source_Type','Type','Short','Description']
 	for rawFile in unprocessedlist:
 		if "Timeline-" in rawFile and rawFile.endswith(".xlsx"):
-			print rawFile
+			logger.debug(rawFile)
 			timeline = pd.read_excel(rawFile, sheetname=0, header=None, names=timeline_column)
 			timeline = clean(timeline, list(timeline))
 			timeline_merged = timeline_merged.append(timeline, ignore_index=True)
 		if "-MFT-" in rawFile:
-			print rawFile
+			logger.debug(rawFile)
 			mft_column = ['Date', 'Time', 'Timezone', 'MACB', 'Source', 'Type', '1' , 'user', 'host', 'Description', 'Desc', 'Version', 'Filename', 'Inode', 'Notes', "Format", "Extra"]
 			timeline = pd.read_csv(rawFile, sep='|', header=None, names=mft_column)
 			del timeline['Timezone']
@@ -100,15 +100,15 @@ def outputTimeline(directory, projectname, results, split):
 			timeline_merged['Time'].replace('-', np.nan, inplace=True)
 			timeline_merged['Time'] = timeline_merged['Time'].str.replace(r'\.\d*', '')
 		if "AllLogs.csv" in rawFile:
-			print rawFile
+			logger.debug(rawFile)
 			logs = pd.read_csv(rawFile)
 			logs_final = pd.DataFrame()
 			try:
 				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %I:%M:%S %p").dt.date.astype(str)
 				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%d/%m/%Y %I:%M:%S %p").dt.strftime('%H:%M:%S')
 			except:
-				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %I:%M:%S %p").dt.date.astype(str)
-				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], format="%m/%d/%Y %I:%M:%S %p").dt.strftime('%H:%M:%S')
+				logs_final['Date'] = pd.to_datetime(logs['TimeCreated'], infer_datetime_format=True).dt.date.astype(str)
+				logs_final['Time'] = pd.to_datetime(logs['TimeCreated'], infer_datetime_format=True).dt.strftime('%H:%M:%S')
 			logs_final['MACB'] = "..C."
 			logs_final['Source'] = "EVT"
 			logs_final['Source_Type'] = "WinEvt"
@@ -118,7 +118,7 @@ def outputTimeline(directory, projectname, results, split):
 			logs_final = clean(logs_final, list(logs_final))
 			timeline_merged = timeline_merged.append(logs_final, ignore_index=True)
 
-	print timeline_merged
+	logger.debug(timeline_merged)
 	timeline_merged.dropna(subset=['Date'], inplace=True)
 	timeline_merged.dropna(subset=['Time'], inplace=True)
 
@@ -127,12 +127,22 @@ def outputTimeline(directory, projectname, results, split):
 
 	timeline_merged.sort_values('DateTime_merged', ascending=True, inplace=True)
 	
+	# disable splitting if one file only
+	if  (len(timeline_merged)/split)+1 == 1:
+		split = 0
+
 	if split:
-		splitdata = np.array_split(timeline_merged, split)
+		splitdata = np.array_split(
+			timeline_merged, 
+			(len(timeline_merged)/split)+1 )
 		count = 1
 		for data in splitdata:
 			workbook = load_workbook(filename= 'MAGNETO_Timeline_template.xlsx')
-			writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Timeline-' + str(count) + '-' + timestamp + '.xlsx', engine='openpyxl')
+			writer = pd.ExcelWriter(
+				'./Results/' + projectname + 
+				'/' + imgname + '-Timeline-' + timestamp + 
+				'-' + str('%03d' % count) + 
+				'.xlsx', engine='openpyxl')
 			writer.book = workbook
 			writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
 			writer.save()
@@ -141,7 +151,10 @@ def outputTimeline(directory, projectname, results, split):
 			count += 1
 	else:
 		workbook = load_workbook(filename= 'MAGNETO_Timeline_template.xlsx')
-		writer = pd.ExcelWriter('./Results/' + projectname + '/' + imgname + '-Timeline-' + timestamp + '.xlsx', engine='openpyxl')
+		writer = pd.ExcelWriter(
+			'./Results/' + projectname + 
+			'/' + imgname + '-Timeline-' + timestamp + 
+			'.xlsx', engine='openpyxl')
 		writer.book = workbook
 		writer.sheets = dict((ws.title,ws) for ws in workbook.worksheets)
 		writer.save()
@@ -168,7 +181,7 @@ def main():
 	parser.add_argument('-d', dest='directory', required=True, type=str, help="Directory containing evidence files")
 	parser.add_argument('-r', dest='results', required=True, type=str, help="Directory containing results that was output by Post Triage Python Script")
 	parser.add_argument('-p', dest='projectname', type=str, required=True, help="Codename of the project that the evidence is part of")
-	parser.add_argument('-s', dest='split', type=int, required=False, help="Split timeline to number of excel workbooks specified by input")
+	parser.add_argument('-s', dest='split', type=int, required=False, help="Split timeline to a maximum of X rows per file.  Default 100k.")
 	args = parser.parse_args()
 
 	searchDirectory = args.directory
@@ -178,7 +191,7 @@ def main():
 	if args.split:
 		split = args.split
 	else:
-		split = 0
+		split = CONFIG['TIMELINE']['DEFAULT_SPLIT']
 
 	if "Incident" in searchDirectory:
 		pathParts = searchDirectory.split('\\')

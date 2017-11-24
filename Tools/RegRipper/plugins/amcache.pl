@@ -144,6 +144,8 @@ sub pluginmain {
 	else {
 		::rptMsg($key_path." not found.");
 	}
+
+	$workbook->close();
 	
 # Root\Programs subkey	
 	$key_path = 'Root\\Programs';

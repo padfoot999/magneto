@@ -348,6 +348,7 @@ sub pluginmain {
 		$worksheet->write($row,9,$usb->{'AssociatedUser'});
 		$row++;
 	}
+	$workbook->close();
 
 	my $workbook2 = Excel::Writer::XLSX->new($output.'Timeline-USB.xlsx');
 	my $worksheet2 = $workbook2->add_worksheet();
@@ -415,5 +416,6 @@ sub pluginmain {
 			}
 		}
 	}
+	$workbook2->close();
 }
 1;

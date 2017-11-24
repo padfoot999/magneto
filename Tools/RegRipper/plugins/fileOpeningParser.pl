@@ -512,6 +512,7 @@ sub pluginmain {
 			}
 		}
 	}
+	$workbook->close();
 }
 
 sub getRDValues {

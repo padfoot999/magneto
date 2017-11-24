@@ -11,7 +11,7 @@ def renew_connection():
 
     	bytes_read = controller.get_info("traffic/read")
     	bytes_written = controller.get_info("traffic/written")
-    	print "My Tor realy has read %s bytes and written %s" % (bytes_read, bytes_written)
+    	print "My Tor relay has read %s bytes and written %s" % (bytes_read, bytes_written)
 
 
 req = requests.get('http://icanhazip.com/', 

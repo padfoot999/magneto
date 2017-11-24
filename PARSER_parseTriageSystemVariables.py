@@ -101,7 +101,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 			if not tempValue[1].isdigit():
 				logger.error("System Variables : Problem processing the following line as processor_level field is NOT numeric :")
 				skip = True
-				print str(temp)	
+				logger.error(str(temp))
 		else:
 			try:
 				insertValue[tempValue[0].lower()] = tempValue[1]

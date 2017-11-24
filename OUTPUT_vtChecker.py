@@ -174,7 +174,7 @@ class MalwrAPI(object):
 	def display_message(self, s):
 		"""Display the message"""
 		if self.verbose:
-			print('[verbose] %s' % s)
+			logger.debug('[verbose] %s' % s)
 
 	def get_latest_comments(self):
 		"""Request the last comments on malwr.com"""
@@ -1410,11 +1410,11 @@ def main():
 		logger.debug('Reading Encase export file %s' % args.encase)
 		with open(args.encase, 'rU') as f:
 			reader = csv.DictReader(f)
-			print reader.fieldnames
+			logger.debug(reader.fieldnames)
 			if len(reader.fieldnames) == 1:
 				f.seek(0)
 				reader = csv.DictReader(f, dialect = csv.excel_tab)
-				print reader.fieldnames
+				logger.debug(reader.fieldnames)
 			counter = 0
 			for row in reader:
 				if 'Full Path' in row:
@@ -1480,17 +1480,17 @@ def main():
 						path = os.path.join(root,filename).decode('utf-8')               
 						filelist.append(path)
 						queues['filequeue'].put(path)
-						print path
+						logger.debug(path)
 
 		for i in xrange(threads):
-			print("Starting thread %s" % (i))
+			logger.info("Starting thread %s" % (i))
 			thread = Thread(target=md5HashDaemon, args=(i, queues['filequeue'], queues['resultsqueue'], queues))
 			thread.setDaemon(True)
 			thread.start()
 			time.sleep(1)
 
 		while True:
-			print("md5Hash monitoring status: filequeue %s, resultsqueue %s" % (queues['filequeue'].qsize(), queues['resultsqueue'].qsize()))
+			logger.info("md5Hash monitoring status: filequeue %s, resultsqueue %s" % (queues['filequeue'].qsize(), queues['resultsqueue'].qsize()))
 			if queues['resultsqueue'].qsize() > 0:
 				counter = 0
 				while True:

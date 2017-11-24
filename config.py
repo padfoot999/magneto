@@ -9,8 +9,6 @@ __description__ = 'Configuration file to store all "global" variables and setup 
 
 import logging
 import os
-import OUTPUT_log
-OUTPUT_log.setupLogger('root')
 
 # Install tor browser when VT has blocked your IP address. Use socks5 proxy for tor.
 # URL: https://www.torproject.org/download/download-easy.html.en
@@ -63,11 +61,15 @@ except:
 #DESCRIPTION: Main Configuration parameters
 CONFIG = {
 
+    'GENERAL': {
+        'DEBUG_FLAG': True,
+    },
+
     'DATABASE': {
         'DATABASENAME': "'magneto'",
         'HOST': "'127.0.0.1'",
         'USER': "'postgres'",
-        'PASSWORD': "'<INSERT PASSWORD TO MAGNETO DATABASE'",
+        'PASSWORD': "'password'",
     },
 
     'ONLINE': {
@@ -96,7 +98,17 @@ CONFIG = {
         'CUCKOO_PATH': '/opt/cuckoo',
         'FILE_CLEANUP': False,        
 	},
+
     'CVE': {
         'NVD_CACHE': 'nvd_cache',
     },
+    
+    'TIMELINE': {
+        'DEFAULT_SPLIT': 100000,
+    },
 }
+
+
+
+import OUTPUT_log
+OUTPUT_log.setupLogger('root')  #must call setupLogger here after CONFIG

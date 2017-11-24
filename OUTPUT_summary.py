@@ -54,7 +54,7 @@ def outputSummary(directory, projectname, results):
 	ipaddress_list = {}
 	DATABASE = CONFIG['DATABASE']
 	dbhandle = db.databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
-	logger.info("dbhandle is " + str(dbhandle))
+	logger.debug("dbhandle is " + str(dbhandle))
 	cur = dbhandle.cursor()
 	query = "SELECT DISTINCT imagename FROM project.project_image_mapping WHERE projectname = %s"
 	logger.info("query is : " + str(query))

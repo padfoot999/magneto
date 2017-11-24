@@ -306,6 +306,7 @@ sub pluginmain {
 			::rptMsg("Could not access ".$key_path);
 			::logMsg("Could not access ".$key_path);
 		}
+		$workbook->close();
 	}
 	else {
 		::logMsg("MSOffice version not found.");

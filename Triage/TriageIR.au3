@@ -67,6 +67,26 @@ If $GUI_ini = "No" Then
    INI2Command()
 EndIf
 
+
+
+Func GetOSVariable()	;returning the user folder location
+	If @OSVersion = "WIN_10" Then Return "Users"
+	If @OSVersion = "WIN_2003" Then Return "Docs"
+	If @OSVersion = "WIN_2008" Then Return "Users"
+	If @OSVersion = "WIN_2008R2" Then Return "Users"
+	If @OSVersion = "WIN_2012" Then Return "Users"
+	If @OSVersion = "WIN_2012R2" Then Return "Users"
+	If @OSVersion = "WIN_7" Then Return "Users"
+	If @OSVersion = "WIN_8" Then Return "Users"
+	If @OSVersion = "WIN_81" Then Return "Users"
+	If @OSVersion = "WIN_VISTA" Then Return "Users"
+	If @OSVersion = "WIN_XP" Then Return "Docs"
+	If @OSVersion = "WIN_XPe" Then Return "Docs"
+	Return "Users"	;default
+EndFunc
+
+
+
 Func TriageGUI()						;Creates a graphical user interface for Triage
 
    Local 	$filemenu, $fileitem1, $fileitem2
@@ -1909,18 +1929,7 @@ Func RecentFolder()						;Send information to the recent folder copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -1948,18 +1957,7 @@ Func _RobocopyRF($path, $output)		;Copy Recent folder from all profiles while ma
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($EvDir & '\Recent LNKs\' & $output) Then DirCreate($EvDir & '\Recent LNKs\' & $output)
 
@@ -1997,16 +1995,7 @@ Func JumpLists()						;Provide info to the Jumplist copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2070,12 +2059,7 @@ Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
    Local $autodest = $EvDir & '\Jump Lists\' & $output & '\Automatic'
    Local $customdest = $EvDir & '\Jump Lists\' & $output & '\Custom'
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2189,18 +2173,7 @@ Func RecentFolder_Target()						;Send information to the recent folder copy func
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2228,18 +2201,7 @@ Func _RobocopyRFTgt($path, $output)		;Copy Recent folder from all profiles while
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
 	  If $OS = "Users" Then
 			$recPATH = $path & '\AppData\Roaming\Microsoft\Windows\Recent'
@@ -2288,13 +2250,7 @@ Func JumpLists_Target()						;Provide info to the Jumplist copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2328,12 +2284,7 @@ Func _RobocopyJLTgt($path, $output)		;Copy Jumplist information while maintainin
    Local $customdest = $EvDir & '\Jump Lists\' & $output & '\Custom'
    Local $jlecmd = ' .\Tools\JLECmd-master\JLECmd-master\JLECmd\bin\Debug\JLECmd'
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($autodest & "\Files") Then DirCreate($autodest & "\Files")
    If Not FileExists($customdest & "\Files") Then DirCreate($customdest & "\Files")
@@ -2577,18 +2528,7 @@ Func UsrclassE()  						;Search for profiles and initiate the copy of USRCLASS.d
    Local $OS = "Users"
    Local $uPath, $usr, $profs, $uDir, $uPath, $uATB
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -2761,18 +2701,7 @@ Func VSC_RobocopyRF($path, $output, $vrfc)		;Copy Recent folder from all profile
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output) Then DirCreate($EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output)
 
@@ -2833,11 +2762,7 @@ Func VSC_RobocopyJL($path, $output, $vjlc)		;Copy Jumplist information while mai
    Local $autodest = $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Automatic'
    Local $customdest = $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Custom'
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2951,13 +2876,7 @@ Func VSC_RobocopyNTU($path, $output, $vntc)	;Copy function for NTUSER.DAT (Volum
    Local $shellex = '"' & @ScriptDir & '\Tools\cmd.exe" /c'
    Local $ntudest = $EvDir & "VSC_" & $vntc & '\Registry\' & $output
 
-
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($ntudest) Then DirCreate($ntudest)
 
@@ -3320,17 +3239,7 @@ Func EvtCopy()							;Copy all event logs from local machine
    RunWait($evtc3, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $evtc3 & @CRLF)
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Docs" Then $evtdir = '"C:\Windows\system32\config"'
    If $OS = "Users" Then $evtdir = '"C:\Windows\system32\winevt\Logs"'
@@ -3566,18 +3475,7 @@ Func bwsr_cache()						;Send information to the recent folder copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3607,18 +3505,7 @@ EndFunc
 
 Func mozilla_cache($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -3644,18 +3531,7 @@ EndFunc
 
 Func ie_cache($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Microsoft\Windows\WebCache"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Local Settings\Temporary Internet Files"
@@ -3671,18 +3547,7 @@ EndFunc
 
 Func chrome_cache($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\Default\Cache"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\Default\Cache"
@@ -3725,18 +3590,7 @@ Func bwsr_fav()
    ;RunWait($fav2, "", @SW_HIDE)
 	  ;FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $fav2 & @CRLF)
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3763,18 +3617,7 @@ EndFunc
 
 Func mozilla_fav($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
@@ -3805,18 +3648,7 @@ Func chrome_fav($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -3857,18 +3689,7 @@ Func bwsr_cookies()						;Send information to the recent folder copy function
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3895,18 +3716,7 @@ EndFunc
 
 Func mozilla_cookies($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -3943,18 +3753,7 @@ Func chrome_cookies($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -3995,18 +3794,7 @@ Func bwsr_dl()						;Send information to the recent folder copy function
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -4033,18 +3821,7 @@ EndFunc
 
 Func mozilla_download($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -4064,18 +3841,7 @@ Func chrome_download($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -4116,18 +3882,7 @@ Func bwsr_autocomplete()						;Send information to the recent folder copy functi
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -4154,18 +3909,7 @@ EndFunc
 
 Func mozilla_autocomplete($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -4185,18 +3929,7 @@ Func chrome_autocomplete($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -4240,18 +3973,7 @@ Func bwsr_webcache()
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"

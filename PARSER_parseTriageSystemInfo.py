@@ -149,7 +149,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 					except (ValueError,IndexError) as e:
 						label = None
 						logger.error("SystemProblem assigning label due to " + str(e))
-						print "line is " + str(temp)
+						logger.error("line is " + str(temp))
 						pass
 
 					try:
@@ -364,19 +364,22 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 							value = value.replace(",","")
 							#Removing space from memory size. e.g 2928 mb becomes 2928mb
 							value = value.replace(" ","")
-						insertSystemInfo[key] = value
+						# insertSystemInfo[key] = value #20171020 commented out catch-all
 
 		except (ValueError,IndexError) as e:
 			logger.error("SystemProblem finding 'Page', 'File', 'Location(s):' headers due to " + str(e))
 			pass
 
 		try:
-			#Assuming there is only 1 page file per system...
+			# current code assumes there is only 1 page file per system...
 			while fileBuffer[0][0] != 'Domain:': #in the event there are more than one page file locations
 				if fileBuffer[0][0:3] == ['Page', 'File', 'Location(s):']:
 					insertSystemInfo['pagefilelocation'] = " ".join(fileBuffer.popleft()).split(":", 1)[-1]
 				else:
-					insertSystemInfo['locationpath'] = "".join(fileBuffer.popleft())
+					# TODO: rayfoo 20171102 need to do proper revamp of database structure for multiple pagefile scenarios
+					insertSystemInfo['pagefilelocation'] = "%s; %s" % (
+						insertSystemInfo['pagefilelocation'],
+						" ".join(fileBuffer.popleft()).strip())
 		except (ValueError,IndexError) as e:
 			logger.error("SystemProblem finding 'Domain:' headers due to " + str(e))
 			pass
@@ -430,7 +433,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 					try:
 						tempstring = temp[0]
 						if tempstring == "[246]":
-							print "Hotfix exceeds 255 entries! Please take note!"
+							logger.info("Hotfix exceeds 255 entries! Please take note!")
 							hotfixid = ""
 							description = ""
 						else:
@@ -547,7 +550,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 							fileBuffer.popleft()
 						except (ValueError,IndexError) as e:
 							logger.error("SystemProblem moving file processing pointer for IP address(es) due to " + str(e))
-							print "Note that this may be a false positive due to reaching the EOF"
+							logger.error("Note that this may be a false positive due to reaching the EOF")
 							pass
 
 						#Assuming ip address can only be specified line by line
@@ -555,7 +558,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 							existIpAddressField = len(fileBuffer[0])
 						except (ValueError,IndexError) as e:
 							logger.error("SystemError moving file processing pointer for IP address(es) due to " + str(e))
-							print "Note that this may be a false positive due to reaching the EOF"
+							logger.error("Note that this may be a false positive due to reaching the EOF")
 							pass
 
 						try:
@@ -593,7 +596,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 								db.databaseInsert(databaseConnectionHandle,Schema,Table,insertNICIPValue)
 						except (ValueError,IndexError) as e:
 							logger.error("SystemError moving file processing pointer for ipid and ipadd due to " + str(e))
-							print "Note that this may be a false positive due to reaching the EOF"
+							logger.error("Note that this may be a false positive due to reaching the EOF")
 							pass
 
 					#Resetting the table back to triage_sysinfo_nic
@@ -613,7 +616,7 @@ def parseAndPopulate(databaseConnectionHandle, filename):
 							logger.debug("status is " + status + "\n")
 					except (ValueError,IndexError) as e:
 						logger.error("SystemError moving file processing pointer for status due to " + str(e))
-						print "Note that this may be a false positive due to reaching the EOF"
+						logger.error("Note that this may be a false positive due to reaching the EOF")
 						pass
 
 					logger.debug("insertNICValue is " + str(insertNICValue) + "\n")

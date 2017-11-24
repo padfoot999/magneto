@@ -210,8 +210,8 @@ def parseAndPopulate(databaseConnectionHandle, filename):
             else:
                 skip = True
                 logger.error("Psxview: Problem processing the following line as pid field is NOT numeric :")
-                print "pid is " + pid
-                print str(temp)
+                logger.debug("pid is " + pid)
+                logger.debug(str(temp))
 
             #Continue to insert without the errorneous field
             insertValue['pslist'] = pslist

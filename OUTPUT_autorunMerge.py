@@ -15,6 +15,9 @@ import csv
 import numpy as np
 import chardet
 
+import logging
+logger = logging.getLogger('root')
+
 import sys  
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -27,14 +30,16 @@ def autorunMerge(directory, projectname):
 	for root, dirs, files in os.walk(directory):
 		for directory in dirs:
 			if "Incident" in directory:
-				if str(os.path.join(root,directory)) not in incidentFolders:             
+				if str(os.path.join(root,directory)) not in incidentFolders:
 					incidentFolders[directory] = os.path.join(root,directory)
 
 	for incidentFolder in incidentFolders.keys():
+		logger.debug(incidentFolder)
 		for root, dirs, files in os.walk(incidentFolders[incidentFolder]):
 			for filename in files:
 				if filename == "AutoRun Info.csv":
 					rawFile = os.path.join(root,filename)
+					logger.debug(rawFile)
 					rawdata = open(rawFile, "r").read()
 					result = chardet.detect(rawdata)
 					charenc = result['encoding']

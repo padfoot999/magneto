@@ -34,7 +34,7 @@ def eseDatabase(mountpoint):
 	if edbFile:
 		subprocess.call([toolsDirectory+"\\nirsoft_package\\NirSoft\\esedatabaseview.exe", "/table", edbFile, "*", "/scomma", resultsDirectory+"\\WindowsEDB_*.csv"])
 		
-	print resultsDirectory
+	logger.debug(resultsDirectory)
 
 #NAME: thumbsViewer
 #INPUT: Mountpoint of evidence file (i.e. G:\)
@@ -54,9 +54,9 @@ def thumbsViewer(mountpoint):
 	thumbdbPaths = []
 	thumbdbPaths = ['Users\\%s\\AppData\\Local\\Microsoft\\Windows\\Explorer' % name for name in os.listdir(mountpoint+"Users\\.") if os.path.isdir(mountpoint+"Users\\")]		
 	for thumbdbPath in thumbdbPaths:
-		print mountpoint + thumbdbPath
+		logger.debug(mountpoint + thumbdbPath)
 		if os.path.isdir(mountpoint + thumbdbPath):
-			print mountpoint + thumbdbPath
+			logger.debug(mountpoint + thumbdbPath)
 			thumbcaches = [f for f in os.listdir(mountpoint + "\\" + thumbdbPath) if os.path.isfile(os.path.join(mountpoint + "\\" + thumbdbPath, f)) and re.search(r'(\w+\_\d+)', f)]
 			for thumbcache in thumbcaches:
 				subprocess.call([toolsDirectory+"\\thumbcacheviewer.exe", "-o", resultsDirectory, "-c", mountpoint+thumbdbPath+"\\"+thumbcache]) 

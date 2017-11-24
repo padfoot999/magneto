@@ -1,0 +1,1 @@
+ConsoleWrite("@OSVersion is " & @OSVersion & @CRLF)

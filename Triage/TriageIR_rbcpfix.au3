@@ -50,7 +50,7 @@ Global	$wbemFlagForwardOnly		= 0x20				;DO NOT CHANGE
 Global	$strComputer = "."
 Global	$compName = @ComputerName
 
-$ini_file = "Triage-CMD.ini"
+$ini_file = "Triage.ini"
 
 If IsAdmin() = 0 Then
 	;MsgBox(64, "Insufficient Privilege Detected", 'Please restart with "RunAs /user:[admin] ' & @ScriptDir & '\TriageIR.exe" or Right-Click "Run As Administrator".')
@@ -66,6 +66,26 @@ EndIf
 If $GUI_ini = "No" Then
    INI2Command()
 EndIf
+
+
+
+Func GetOSVariable()	;returning the user folder location
+	If @OSVersion = "WIN_10" Then Return "Users"
+	If @OSVersion = "WIN_2003" Then Return "Docs"
+	If @OSVersion = "WIN_2008" Then Return "Users"
+	If @OSVersion = "WIN_2008R2" Then Return "Users"
+	If @OSVersion = "WIN_2012" Then Return "Users"
+	If @OSVersion = "WIN_2012R2" Then Return "Users"
+	If @OSVersion = "WIN_7" Then Return "Users"
+	If @OSVersion = "WIN_8" Then Return "Users"
+	If @OSVersion = "WIN_81" Then Return "Users"
+	If @OSVersion = "WIN_VISTA" Then Return "Users"
+	If @OSVersion = "WIN_XP" Then Return "Docs"
+	If @OSVersion = "WIN_XPe" Then Return "Docs"
+	Return "Users"	;default
+EndFunc
+
+
 
 Func TriageGUI()						;Creates a graphical user interface for Triage
 
@@ -1868,11 +1888,11 @@ EndFunc
 Func Prefetch()							;Copy any prefecth data while maintaining metadata
    FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Currently Executing: 2. Prefetch" & @CRLF)
    Local $robocopy = '"' & @ScriptDir & '\Tools\Robocopy.exe"'
-   Local $pf1 = $shellex & ' ' & $robocopy & ' "' & @WindowsDir & '\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /ZB /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"'
+   Local $pf1 = $shellex & ' ' & $robocopy & ' "' & @WindowsDir & '\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"'
 
    If Not FileExists($EvDir & "\Prefetch") Then DirCreate($EvDir & "\Prefetch")
 
-   ShellExecuteWait($robocopy, ' "' & @WindowsDir & '\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /ZB /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
+   ShellExecuteWait($robocopy, ' "' & @WindowsDir & '\Prefetch" "' & $EvDir & '\Prefetch" *.pf /copyall /TS /r:2 /w:3 /FP /NP /log:"' & $RptsDir & '\Prefetch_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command:" & $pf1 & @CRLF)
 EndFunc
 
@@ -1909,18 +1929,7 @@ Func RecentFolder()						;Send information to the recent folder copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -1948,18 +1957,7 @@ Func _RobocopyRF($path, $output)		;Copy Recent folder from all profiles while ma
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($EvDir & '\Recent LNKs\' & $output) Then DirCreate($EvDir & '\Recent LNKs\' & $output)
 
@@ -1971,7 +1969,7 @@ Func _RobocopyRF($path, $output)		;Copy Recent folder from all profiles while ma
 			$recPATH = '"' & $path & '\Recent"'
 		 EndIf
 
-   Local $recF1 = $robocopy & ' ' & $recPATH & ' "' & $EvDir & '\Recent LNKs\' & $output & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'Recent LNKs\' & $output & ' Recent RoboCopy Log.txt"'
+   Local $recF1 = $robocopy & ' ' & $recPATH & ' "' & $EvDir & '\Recent LNKs\' & $output & '" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'Recent LNKs\' & $output & ' Recent RoboCopy Log.txt"'
    RunWait($recF1, "", @SW_HIDE)
 		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command:" & $recF1 & @CRLF)
 
@@ -1997,16 +1995,7 @@ Func JumpLists()						;Provide info to the Jumplist copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2070,12 +2059,7 @@ Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
    Local $autodest = $EvDir & '\Jump Lists\' & $output & '\Automatic'
    Local $customdest = $EvDir & '\Jump Lists\' & $output & '\Custom'
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2085,8 +2069,8 @@ Func _ArrayAddColumns(ByRef $aArrayIn, $NumColCount = 1)
    $autoexe1 = '"' & $path & '\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations"'
    $customexe1 = '"' & $path & '\AppData\Roaming\Microsoft\Windows\Recent\CustomDestinations"'
 
-   Local $jla1 = $robocopy & " " & $autoexe1 & ' "' & $autodest & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_RoboCopy_Log.txt"'
-   Local $jlc1 = $robocopy & " " & $customexe1 & ' "' & $customdest & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_RoboCopy.txt"'
+   Local $jla1 = $robocopy & " " & $autoexe1 & ' "' & $autodest & '" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_RoboCopy_Log.txt"'
+   Local $jlc1 = $robocopy & " " & $customexe1 & ' "' & $customdest & '" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_RoboCopy.txt"'
 
    RunWait($jla1, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $jla1 & @CRLF)
@@ -2162,7 +2146,7 @@ Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
 	  Local $fullPath = $dictKeys[$i]
 	  Local $parentDirectory = StringRegExpReplace($fullPath, '\\[^\\]*$', '')
 	  Local $file = StringRegExpReplace($fullPath, '.*\\', '')
-	  Local $recF1 = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Prefetch\Files" "' & $file & '" /copyall /ZB /TS /r:2 /w:3 /FP /NP /log+:"' & $RptsDir & '\Prefetch_Target_RoboCopy_Log.txt"'
+	  Local $recF1 = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Prefetch\Files" "' & $file & '" /copyall /TS /r:2 /w:3 /FP /NP /log+:"' & $RptsDir & '\Prefetch_Target_RoboCopy_Log.txt"'
 	  ;some files do not allow renaming i.e. cmd
 	  ;renaming command might be different with different OS Versions
 	  If StringRegExp($file, '\.\w*$', $STR_REGEXPMATCH) Then
@@ -2170,7 +2154,7 @@ Func Prefetch_Target()							;Copy any prefecth data while maintaining metadata
 	  Else
 		 Local $rename = @ComSpec & ' /c rename "' & $EvDir & '\Prefetch\Files\' & $file & '" "' & $prefetchDict($dictKeys[$i]) & '"'
 	  EndIf
-	  ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $EvDir & '\Prefetch\Files" "' & $file & '" /copyall /ZB /TS /r:2 /w:3 /FP /NP', $tools, "", @SW_HIDE)
+	  ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $EvDir & '\Prefetch\Files" "' & $file & '" /copyall /TS /r:2 /w:3 /FP /NP', $tools, "", @SW_HIDE)
 		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $recF1 & @CRLF)
 	  RunWait($rename, "", @SW_HIDE)
 		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $rename & @CRLF)
@@ -2189,18 +2173,7 @@ Func RecentFolder_Target()						;Send information to the recent folder copy func
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2228,18 +2201,7 @@ Func _RobocopyRFTgt($path, $output)		;Copy Recent folder from all profiles while
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
 	  If $OS = "Users" Then
 			$recPATH = $path & '\AppData\Roaming\Microsoft\Windows\Recent'
@@ -2271,8 +2233,8 @@ Func _RobocopyRFTgtFiles($path, $output)		;Copy Recent folder from all profiles 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
    Local $parentDirectory = StringRegExpReplace($path, '\\[^\\]*$', '')
    Local $file =  '"' & StringRegExpReplace($path, '.*\\', '') & '"'
-   Local $recF1 = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Recent LNKs\' & $output & '\Files" ' & $file & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /IS'
-   ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $EvDir & '\Recent LNKs\' & $output & '\Files" ' & $file & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /IS /log:"' & $EvDir & 'Recent LNKs\' & $output & ' Recent Target RoboCopy Log.txt"', $tools, "", @SW_HIDE)
+   Local $recF1 = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Recent LNKs\' & $output & '\Files" ' & $file & ' /copyall /TS /r:4 /w:3 /FP /NP /IS'
+   ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $EvDir & '\Recent LNKs\' & $output & '\Files" ' & $file & ' /copyall /TS /r:4 /w:3 /FP /NP /IS /log:"' & $EvDir & 'Recent LNKs\' & $output & ' Recent Target RoboCopy Log.txt"', $tools, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $recF1 & @CRLF)
 EndFunc
 
@@ -2288,13 +2250,7 @@ Func JumpLists_Target()						;Provide info to the Jumplist copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
 
@@ -2328,12 +2284,7 @@ Func _RobocopyJLTgt($path, $output)		;Copy Jumplist information while maintainin
    Local $customdest = $EvDir & '\Jump Lists\' & $output & '\Custom'
    Local $jlecmd = ' .\Tools\JLECmd-master\JLECmd-master\JLECmd\bin\Debug\JLECmd'
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($autodest & "\Files") Then DirCreate($autodest & "\Files")
    If Not FileExists($customdest & "\Files") Then DirCreate($customdest & "\Files")
@@ -2404,15 +2355,15 @@ Func _RobocopyJLTgtFiles($csv, $output, $tsvfile, $dest)
 		 Local $md5 = _Crypt_HashFile($fullPath, $CALG_MD5)
 		 Local $parentDirectory = StringRegExpReplace($fullPath, '\\[^\\]*$', '')
 		 Local $file = StringRegExpReplace($fullPath, '.*\\', '')
-		 Local $auto = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $dest & '\Files" "' & $file & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_Target_RoboCopy_Log.txt"'
-		 Local $custom = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $dest & '\Files" "' & $file & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_Target_RoboCopy_Log.txt"'
+		 Local $auto = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $dest & '\Files" "' & $file & '" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_Target_RoboCopy_Log.txt"'
+		 Local $custom = $shellex & ' ' & $robocopy & ' "' & $parentDirectory & '" "' & $dest & '\Files" "' & $file & '" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_Target_RoboCopy_Log.txt"'
 		 Local $newFileName = StringRegExpReplace($file, '\.\w*$', '') & '-' & $md5 & StringRegExp($file, '\.\S*$', $STR_REGEXPARRAYMATCH)[0]
 		 Local $rename = @ComSpec & ' /c rename "' & $dest & '\Files\' & $file & '" "' & $newFileName & '"'
 		 If StringInStr($tsvfile, "Automatic") Then
-			ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $dest & '\Files" ' & $file & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_Target_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
+			ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $dest & '\Files" ' & $file & ' /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Auto_Target_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
 			   FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $auto & @CRLF)
 		 Else
-			ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $dest & '\Files" ' & $file & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_Target_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
+			ShellExecuteWait($robocopy, ' "' & $parentDirectory & '" "' & $dest & '\Files" ' & $file & ' /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & '\Jump Lists\' & $output & '_JumpList_Custom_Target_RoboCopy_Log.txt"', $tools, "", @SW_HIDE)
 			   FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $custom & @CRLF)
 		 EndIf
 		 RunWait($rename, "", @SW_HIDE)
@@ -2577,18 +2528,7 @@ Func UsrclassE()  						;Search for profiles and initiate the copy of USRCLASS.d
    Local $OS = "Users"
    Local $uPath, $usr, $profs, $uDir, $uPath, $uATB
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -2715,10 +2655,10 @@ Func VSC_Prefetch()						;Copy Prefetch data from any Volume Shadow Copies
 
    For $i = 0 To UBound($VSCList) - 1
 	  Local $v = $VSCList[$i]
-	  $vscpf1 = $shellex & ' ' & $robocopy & ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"'
+	  $vscpf1 = $shellex & ' ' & $robocopy & ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"'
 	  If FileExists("C:\VSC_" & $v) = 1 Then
 		 If Not FileExists($EvDir & "\VSC_" & $v &"\Prefetch") Then DirCreate($EvDir & "\VSC_" & $v &"\Prefetch")
-		 ShellExecuteWait($robocopy, ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"', $tools)
+		 ShellExecuteWait($robocopy, ' "C:\VSC_' & $v & '\Windows\Prefetch" "' & $EvDir & '\VSC_' & $v & '\Prefetch" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & 'VSC_' & $v & '\VSC_' & $v & ' Prefetch Copy Log.txt"', $tools)
 			FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscpf1 & @CRLF)
 	  EndIf
    Next
@@ -2761,18 +2701,7 @@ Func VSC_RobocopyRF($path, $output, $vrfc)		;Copy Recent folder from all profile
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output) Then DirCreate($EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output)
 
@@ -2784,7 +2713,7 @@ Func VSC_RobocopyRF($path, $output, $vrfc)		;Copy Recent folder from all profile
 	  $recPATH = '"' & $path & '\Recent"'
    EndIf
 
-   Local $vscrf1 = $robocopy & " " & $recPATH & ' "' & $EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /SL /log:"' & $EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output & '_RecentFolder_Copy.txt"'
+   Local $vscrf1 = $robocopy & " " & $recPATH & ' "' & $EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output & '" /copyall /TS /r:4 /w:3 /FP /NP /SL /log:"' & $EvDir & 'VSC_' & $vrfc & '\Recent LNKs\' & $output & '_RecentFolder_Copy.txt"'
 
    RunWait($vscrf1, "", @SW_HIDE)
 		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscrf1 & @CRLF)
@@ -2833,11 +2762,7 @@ Func VSC_RobocopyJL($path, $output, $vjlc)		;Copy Jumplist information while mai
    Local $autodest = $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Automatic'
    Local $customdest = $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Custom'
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($autodest) Then DirCreate($autodest)
    If Not FileExists($customdest) Then DirCreate($customdest)
@@ -2847,8 +2772,8 @@ Func VSC_RobocopyJL($path, $output, $vjlc)		;Copy Jumplist information while mai
    $autoexe1 = '"' & $path & '\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations"'
    $customexe1 = '"' & $path & '\AppData\Roaming\Microsoft\Windows\Recent\CustomDestinations"'
 
-   Local $vscjla1 = $robocopy & " " & $autoexe1 & ' "' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Automatic" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '_JumpList_Auto_Copy.txt"'
-   Local $vscjlc1 = $robocopy & " " & $customexe1 & ' "' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Custom" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '_JumpList_Custom_Copy.txt"'
+   Local $vscjla1 = $robocopy & " " & $autoexe1 & ' "' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Automatic" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '_JumpList_Auto_Copy.txt"'
+   Local $vscjlc1 = $robocopy & " " & $customexe1 & ' "' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '\Custom" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vjlc & '\Jump Lists\' & $output & '_JumpList_Custom_Copy.txt"'
 
    RunWait($vscjla1, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscjla1 & @CRLF)
@@ -2873,7 +2798,7 @@ Func VSC_EvtCopy()						;Copy all event logs from local machine (Volume Shadow C
 		 Local $LogDir = $EvDir & "VSC_" & $vevc & '\Logs'
 		 Local $evtdir = '"C:\VSC_' & $vevc & '\Windows\system32\winevt\Logs"'
 		 If Not FileExists($LogDir) Then DirCreate($LogDir)
-		 Local $VSC_EvtCmd = $robo7 & ' "C:\VSC_' & $vevc & '\Windows\system32\winevt\Logs" "' & $EvDir & "VSC_" & $vevc & '\Logs' & '" /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vevc & '\Event Log Copy.txt"'
+		 Local $VSC_EvtCmd = $robo7 & ' "C:\VSC_' & $vevc & '\Windows\system32\winevt\Logs" "' & $EvDir & "VSC_" & $vevc & '\Logs' & '" /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vevc & '\Event Log Copy.txt"'
 		 RunWait($VSC_EvtCmd, "", @SW_HIDE)
 			FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Copied ." & $evtext & " files from " & $evtdir & "." & @CRLF)
 	  Else
@@ -2894,7 +2819,7 @@ Func VSC_RegHiv($hiv)					;Copy Registry Hive from Volume Shadow Copy
 		 Local $vhivout = $EvDir & "VSC_" & $v & "\Registry"
 		 Local $vhivfile = "C:\VSC_" & $v & "\Windows\System32\Config"
 		 If Not FileExists($vhivout) Then DirCreate($vhivout)
-		 Local $vsc_syshivc = $robo7 & ' "' & $vhivfile & '" "' & $vhivout & '" ' & $hiv & ' /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $vhivout & '\SYSTEM_Log_Copy.txt"'
+		 Local $vsc_syshivc = $robo7 & ' "' & $vhivfile & '" "' & $vhivout & '" ' & $hiv & ' /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $vhivout & '\SYSTEM_Log_Copy.txt"'
 		 RunWait($vsc_syshivc, "", @SW_HIDE)
 			FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vsc_syshivc & @CRLF)
 	  Else
@@ -2951,13 +2876,7 @@ Func VSC_RobocopyNTU($path, $output, $vntc)	;Copy function for NTUSER.DAT (Volum
    Local $shellex = '"' & @ScriptDir & '\Tools\cmd.exe" /c'
    Local $ntudest = $EvDir & "VSC_" & $vntc & '\Registry\' & $output
 
-
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If Not FileExists($ntudest) Then DirCreate($ntudest)
 
@@ -2965,7 +2884,7 @@ Func VSC_RobocopyNTU($path, $output, $vntc)	;Copy function for NTUSER.DAT (Volum
 
    $ntl = '"' & $path & '"'
 
-   Local $vscntu1 = $robocopy & " " & $ntl & ' "' & $EvDir & "VSC_" & $vntc & '\Registry\' & $output & '" NTUSER.DAT /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vntc & '\Registry\' & $output & '\' & $output & '_NTUSER_Copy.txt"'
+   Local $vscntu1 = $robocopy & " " & $ntl & ' "' & $EvDir & "VSC_" & $vntc & '\Registry\' & $output & '" NTUSER.DAT /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $EvDir & "VSC_" & $vntc & '\Registry\' & $output & '\' & $output & '_NTUSER_Copy.txt"'
 
    RunWait($vscntu1, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $vscntu1 & @CRLF)
@@ -3193,7 +3112,7 @@ Func AutoRun_Target()					;Copy autorun target files
 			Local $fullPath = StringReplace($temp[9],'"', "")
 			Local $parentDirectory = StringRegExpReplace($fullPath, '\\[^\\]*$', '')
 			Local $file = StringRegExpReplace($fullPath, '.*\\', '')
-			Local $autorun = $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Autorun" "' & $file & '" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log+:"' & $RptsDir & '\AutoRun_Target_RoboCopy_Log.txt"'
+			Local $autorun = $robocopy & ' "' & $parentDirectory & '" "' & $EvDir & '\Autorun" "' & $file & '" /copyall /TS /r:4 /w:3 /FP /NP /log+:"' & $RptsDir & '\AutoRun_Target_RoboCopy_Log.txt"'
 			RunWait($autorun, @ScriptDir & '\Tools', @SW_HIDE)
 			   FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autorun & @CRLF)
 		 EndIf
@@ -3207,9 +3126,9 @@ Func Srum()						;Gather information pertaining to the user accounts
    ;Local $srumdump = @ScriptDir & '\Tools\srum-dump'
    ;Local $srum1 = $shellex & ' "cd /d ' & $srumdump & ' && srum_dump.exe -i "' & $EvDir & '\SRUDB.dat' & '" -o "' & $EvDir & '\SRUM_DUMP_Output_Report.xls"'
    Local $robocopy = '"' & @ScriptDir & '\Tools\Robocopy.exe"'
-   Local $pf1 = @ComSpec & ' /c ' & $robocopy & ' "' & @WindowsDir & '\System32\sru" "' & $RptsDir & '\Evidence" SRUDB.dat /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\SRU Copy Log.txt"'
+   Local $pf1 = @ComSpec & ' /c ' & $robocopy & ' "' & @WindowsDir & '\System32\sru" "' & $RptsDir & '\Evidence" SRUDB.dat /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\SRU Copy Log.txt"'
 
-   ShellExecuteWait($robocopy, '"' & @WindowsDir & '\System32\sru" "' & $RptsDir & '\Evidence" "SRUDB.dat" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Evidence\SRU Copy Log.txt"', $tools, "", @SW_HIDE)
+   ShellExecuteWait($robocopy, '"' & @WindowsDir & '\System32\sru" "' & $RptsDir & '\Evidence" "SRUDB.dat" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Evidence\SRU Copy Log.txt"', $tools, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $pf1 & @CRLF)
    ;SRUDB file to be processed by Magneto
    ;RunWait($srum1, "")
@@ -3320,17 +3239,7 @@ Func EvtCopy()							;Copy all event logs from local machine
    RunWait($evtc3, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $evtc3 & @CRLF)
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Docs" Then $evtdir = '"C:\Windows\system32\config"'
    If $OS = "Users" Then $evtdir = '"C:\Windows\system32\winevt\Logs"'
@@ -3340,8 +3249,8 @@ Func EvtCopy()							;Copy all event logs from local machine
 
    If Not FileExists($LogDir) Then DirCreate($LogDir)
 
-   If $OS = "Docs" Then $EvtCmd = $robocopy & " " & $evtdir & ' "' & $LogDir & '" *.' & $evtext & ' /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
-   If $OS = "Users" Then $EvtCmd = $robo7 & " " & $evtdir & ' "' & $LogDir & '" /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
+   If $OS = "Docs" Then $EvtCmd = $robocopy & " " & $evtdir & ' "' & $LogDir & '" *.' & $evtext & ' /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
+   If $OS = "Users" Then $EvtCmd = $robo7 & " " & $evtdir & ' "' & $LogDir & '" /TS /r:4 /w:3 /FP /NP /log:"' & $RptsDir & '\Event Log Copy.txt"'
 
    RunWait($EvtCmd, "", @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Copied ." & $evtext & " files from " & $evtdir & "." & @CRLF)
@@ -3566,18 +3475,7 @@ Func bwsr_cache()						;Send information to the recent folder copy function
    Local $robocopy
    Local $robocmd
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3607,18 +3505,7 @@ EndFunc
 
 Func mozilla_cache($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -3644,18 +3531,7 @@ EndFunc
 
 Func ie_cache($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Microsoft\Windows\WebCache"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Local Settings\Temporary Internet Files"
@@ -3671,18 +3547,7 @@ EndFunc
 
 Func chrome_cache($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\Default\Cache"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\Default\Cache"
@@ -3725,18 +3590,7 @@ Func bwsr_fav()
    ;RunWait($fav2, "", @SW_HIDE)
 	  ;FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $fav2 & @CRLF)
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3763,18 +3617,7 @@ EndFunc
 
 Func mozilla_fav($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
@@ -3785,7 +3628,7 @@ Func mozilla_fav($uDir, $profs)
    $uDir = $uDir & $bwsrprofile
 
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $bookmarks = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Mozilla" "places.sqlite" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Mozilla\MozillaBookmarks_RoboCopy_Log.txt"'
+   Local $bookmarks = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Mozilla" "places.sqlite" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Mozilla\MozillaBookmarks_RoboCopy_Log.txt"'
    RunWait($bookmarks, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $bookmarks & @CRLF)
 EndFunc
@@ -3794,7 +3637,7 @@ Func ie_fav($uDir, $profs)
    If FileExists($uDir & "\Favorites") Then
 	  $uDir = $uDir & "\Favorites"
 	  Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-	  Local $bookmarks = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\IE\Bookmarks" /copyall /S /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\IE\IEBookmarks_RoboCopy_Log.txt"'
+	  Local $bookmarks = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\IE\Bookmarks" /copyall /S /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\IE\IEBookmarks_RoboCopy_Log.txt"'
 	  If Not FileExists($BrowserDir & $profs & '\IE\Bookmarks') Then DirCreate($BrowserDir & $profs& '\IE\Bookmarks')
 	  RunWait($bookmarks, @ScriptDir & '\Tools', @SW_HIDE)
 		 FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $bookmarks & @CRLF)
@@ -3805,18 +3648,7 @@ Func chrome_fav($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -3841,7 +3673,7 @@ EndFunc
 
 Func chrome_fav_robocopy($uDir, $profs, $chromeProfs)
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $bookmarks = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Bookmarks.bak" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeBookmarks_RoboCopy_Log.txt"'
+   Local $bookmarks = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Bookmarks.bak" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeBookmarks_RoboCopy_Log.txt"'
    If Not FileExists($BrowserDir & $profs & '\Chrome\' & $chromeProfs) Then DirCreate($BrowserDir & $profs & '\Chrome\' & $chromeProfs)
    RunWait($bookmarks, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $bookmarks & @CRLF)
@@ -3857,18 +3689,7 @@ Func bwsr_cookies()						;Send information to the recent folder copy function
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -3895,18 +3716,7 @@ EndFunc
 
 Func mozilla_cookies($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -3934,7 +3744,7 @@ Func ie_cookies($uDir, $profs)
    EndIf
 
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $cookies = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\IE\IE Cookies" /copyall /S /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\IE\IECookies_RoboCopy_Log.txt"'
+   Local $cookies = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\IE\IE Cookies" /copyall /S /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\IE\IECookies_RoboCopy_Log.txt"'
    RunWait($cookies, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $cookies & @CRLF)
 EndFunc
@@ -3943,18 +3753,7 @@ Func chrome_cookies($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -3979,7 +3778,7 @@ EndFunc
 
 Func chrome_cookies_robocopy($uDir, $profs, $chromeProfs)
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $cookies = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Cookies" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeCookies_RoboCopy_Log.txt"'
+   Local $cookies = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Cookies" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeCookies_RoboCopy_Log.txt"'
    If Not FileExists($BrowserDir & $profs & '\Chrome\' & $chromeProfs) Then DirCreate($BrowserDir & $profs & '\Chrome\' & $chromeProfs)
    RunWait($cookies, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $cookies & @CRLF)
@@ -3995,18 +3794,7 @@ Func bwsr_dl()						;Send information to the recent folder copy function
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -4033,18 +3821,7 @@ EndFunc
 
 Func mozilla_download($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -4064,18 +3841,7 @@ Func chrome_download($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -4100,7 +3866,7 @@ EndFunc
 
 Func chrome_download_robocopy($uDir, $profs, $chromeProfs)
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $download = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "History" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeHistory_RoboCopy_Log.txt"'
+   Local $download = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "History" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeHistory_RoboCopy_Log.txt"'
    If Not FileExists($BrowserDir & $profs & '\Chrome\' & $chromeProfs) Then DirCreate($BrowserDir & $profs & '\Chrome\' & $chromeProfs)
    RunWait($download, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $download & @CRLF)
@@ -4116,18 +3882,7 @@ Func bwsr_autocomplete()						;Send information to the recent folder copy functi
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"
@@ -4154,18 +3909,7 @@ EndFunc
 
 Func mozilla_autocomplete($uDir, $profs)
    Local $OS
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Roaming\Mozilla\Firefox\Profiles\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Mozilla\Firefox\Profiles\"
@@ -4176,7 +3920,7 @@ Func mozilla_autocomplete($uDir, $profs)
    $uDir = $uDir & $bwsrprofile
 
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $autocomplete = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Mozilla" "formhistory.sqlite" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Mozilla\MozillaAutocomplete_RoboCopy_Log.txt"'
+   Local $autocomplete = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Mozilla" "formhistory.sqlite" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Mozilla\MozillaAutocomplete_RoboCopy_Log.txt"'
    RunWait($autocomplete, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autocomplete & @CRLF)
 EndFunc
@@ -4185,18 +3929,7 @@ Func chrome_autocomplete($uDir, $profs)
    Local $OS
    Local $chromeProfs
    Local $rootDir
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uDir = $uDir & "\AppData\Local\Google\Chrome\User Data\"
    If $OS = "Docs" Then $uDir = $uDir & "\Application Data\Google\Chrome\User Data\"
@@ -4221,8 +3954,8 @@ EndFunc
 
 Func chrome_autocomplete_robocopy($uDir, $profs, $chromeProfs)
    Local $robocopy = '"' & @ScriptDir & '\Tools\robocopy.exe"'
-   Local $autocomplete1 = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Web Data" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeAutocomplete_WebData_RoboCopy_Log.txt"'
-   Local $autocomplete2 = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Network Action Predictor" /copyall /ZB /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeAutocomplete_NetworkActionPredictor_RoboCopy_Log.txt"'
+   Local $autocomplete1 = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Web Data" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeAutocomplete_WebData_RoboCopy_Log.txt"'
+   Local $autocomplete2 = $robocopy & ' "' & $uDir & '" "' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '" "Network Action Predictor" /copyall /TS /r:4 /w:3 /FP /NP /log:"' & $BrowserDir & '\' & $profs & '\Chrome\' & $chromeProfs & '\ChromeAutocomplete_NetworkActionPredictor_RoboCopy_Log.txt"'
    If Not FileExists($BrowserDir & $profs & '\Chrome\' & $chromeProfs) Then DirCreate($BrowserDir & $profs & '\Chrome\' & $chromeProfs)
    RunWait($autocomplete1, @ScriptDir & '\Tools', @SW_HIDE)
 	  FileWriteLine($Log, @YEAR&"-"&@MON&"-"&@MDAY&"  "&@HOUR&":"&@MIN&":"&@SEC&":"&@MSEC&"  >  "&"Executed command: " & $autocomplete1 & @CRLF)
@@ -4240,18 +3973,7 @@ Func bwsr_webcache()
    Local $uPath
    Local $OS
 
-   If @OSVersion = "WIN_7" Then $OS = "Users"
-   If @OSVersion = "WIN_XP" Then $OS = "Docs"
-   If @OSVersion = "WIN_VISTA" Then $OS = "Users"
-   If @OSVersion = "WIN_XPe" Then $OS = "Docs"
-   If @OSVersion = "WIN_2003" Then $OS = "Docs"
-   If @OSVersion = "WIN_2008" Then $OS = "Users"
-   If @OSVersion = "WIN_2008R2" Then $OS = "Users"
-   If @OSVersion = "WIN_8" Then $OS = "Users"
-   If @OSVersion = "WIN_81" Then $OS = "Users"
-   If @OSVersion = "WIN_10" Then $OS = "Users"
-   If @OSVersion = "WIN_2012" Then $OS = "Users"
-   If @OSVersion = "WIN_2012R2" Then $OS = "Users"
+   $OS = GetOSVariable()
 
    If $OS = "Users" Then $uPath = "C:\Users\"
    If $OS = "Docs" Then $uPath = "C:\Documents and Settings\"

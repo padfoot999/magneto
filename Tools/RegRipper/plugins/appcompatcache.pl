@@ -224,6 +224,7 @@ sub pluginmain {
 				}
 				$row++;
 			}
+			$workbook->close();
 		}
 		else {
 			::rptMsg($appcompat_path." not found.");

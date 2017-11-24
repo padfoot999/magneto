@@ -20,7 +20,7 @@ def databaseInitiate():
 
     DATABASE = CONFIG['DATABASE']
     databaseHandle = databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
-    print str(databaseHandle)
+    logger.debug(str(databaseHandle))
     databaseCursor = databaseHandle.cursor()
     
     try:
@@ -90,7 +90,7 @@ def databaseInitiate():
 #DESCRIPTION: Connects to database as specified by function parameters
 def databaseConnect(databaseHost, databaseName, databaseUser, databasePassword):
     databaseConnectionString = "host=" + databaseHost + " dbname=" + databaseName + " user=" + databaseUser + " password=" + databasePassword
-    logger.info("databaseConnectionString is " + databaseConnectionString + "\n")
+    logger.debug("databaseConnectionString is " + databaseConnectionString + "\n")
     try:
         databaseConnectionHandle = psycopg2.connect(databaseConnectionString)
     except psycopg2.OperationalError as e:
@@ -142,8 +142,8 @@ def databaseInsert(databaseConnectionHandle, databaseSchema, databaseTable, dict
     dictValues = cleanBlankStrings(dictValues)
 
     try:
-        logger.info("query is " + query + "\n")
-        logger.info("dictValues.values() is " + str(dictValues.values()) + "\n")
+        logger.info("query is " + query)
+        logger.info("dictValues.values() is " + str(dictValues.values()))
         cur.execute(query, dictValues.values())
         logger.info("%s row(s) inserted!" % cur.rowcount)        
         databaseConnectionHandle.commit()
@@ -174,8 +174,8 @@ def databaseExistInsert(databaseConnectionHandle, databaseSchema, databaseTable,
     query += ") SELECT " + query2 + " WHERE NOT EXISTS (SELECT * FROM " + databaseSchema + "." + databaseTable + " WHERE " + query3 + ");"
 
     try:
-        logger.info("query is " + query + "\n")
-        logger.info("dictValues.values() is " + str(dictValues.values()) + "\n")
+        logger.info("query is " + query)
+        logger.info("dictValues.values() is " + str(dictValues.values()))
         cur.execute(query)
         logger.info("%s row(s) inserted!" % cur.rowcount)
         rowsInserted = cur.rowcount        
@@ -284,7 +284,7 @@ def main():
     #Sample test code
     #Note that all dictValues needs to be an ordered dictionary!!!
     dbhandle = databaseConnect(DATABASE['HOST'], DATABASE['DATABASENAME'], DATABASE['USER'], DATABASE['PASSWORD'])
-    print "dbhandle is " + str(dbhandle) + "\n"
+    logger.debug("dbhandle is " + str(dbhandle) + "\n")
 
     sampleSchema = "path"
     sampleTable = "mem_envars"
@@ -314,7 +314,7 @@ def main():
     sampleSelectValue2 = collections.OrderedDict()
 
     result1 = databaseSelect(dbhandle,sampleSchema,sampleTable,sampleSelectValue1,sampleSelectValue2)
-    print "SELECT result is " + str(result1)
+    logger.info("SELECT result is " + str(result1))
 
     #Testing SELECT function with VALUES
     sampleSelectValue1 = collections.OrderedDict()
@@ -323,7 +323,7 @@ def main():
     sampleSelectValue2['pid'] = 98765,
 
     result2 = databaseSelect(dbhandle,sampleSchema,sampleTable,sampleSelectValue1,sampleSelectValue2)
-    print "SELECT result is " + str(result2)
+    logger.info("SELECT result is " + str(result2))
 
     #Testing INSERT function
     sampleInsertValue = collections.OrderedDict(),
@@ -344,7 +344,7 @@ def main():
     sampleSelectValue3['variable'] = []
     sampleSelectValue3['pathvalue'] = []
     result3 = databaseSelect(dbhandle,sampleSchema,sampleTable,sampleSelectValue3)
-    print "INSERT result is " + str(result3)
+    logger.info("INSERT result is " + str(result3))
 
     #Testing DELETE function
     sampleDeleteValue = collections.OrderedDict()
@@ -360,7 +360,7 @@ def main():
     sampleSelectValue4['variable'] = []
     sampleSelectValue4['pathvalue'] = []
     result4 = databaseSelect(dbhandle,sampleSchema,sampleTable,sampleSelectValue4)
-    print "DELETE result is " + str(result4)
+    logger.info("DELETE result is " + str(result4))
 
 if __name__ == '__main__':
     main()

@@ -235,6 +235,7 @@ sub pluginmain {
         ::rptMsg(sprintf "%-20s |%-20s | %-20s | %-20s | %-20s | %-12s |"."-" x 12,"-" x 12,"-" x 12,"-" x 12,"-" x 12,"-" x 12,"-" x 12);
         traverse($key,\%item);
     }	
+    $workbook->close();
 }
 
 sub traverse {

@@ -4,6 +4,7 @@ __description__ = 'Setup logging to console and file'
 
 import logging
 import os
+from config import CONFIG
 
 #NAME: setupLogger
 #OUTPUT: N/A
@@ -20,7 +21,10 @@ def setupLogger(name):
     #To print on screen
     consoleHandler = logging.StreamHandler(os.sys.stdout)
     consoleHandler.setFormatter(formatter)
-    consoleHandler.setLevel(logging.DEBUG) #set different level for printing on screen
+    if CONFIG['GENERAL']['DEBUG_FLAG']:
+        consoleHandler.setLevel(logging.DEBUG)
+    else:
+        consoleHandler.setLevel(logging.INFO)
     
     #Create logger with above handlers
     logger = logging.getLogger(name)    
