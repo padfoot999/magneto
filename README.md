@@ -52,10 +52,6 @@ setx PERL5LIB c:\path\to\magneto\Tools\RegRipper
 
 11. Download the [NirLauncher Package](http://launcher.nirsoft.net/downloads/) and unzip in Tools/nirsoft_package
 
-12. Download [sleuthkit](https://github.com/sleuthkit/sleuthkit/releases) and unzip at Tools/sleuthkit
-
-13. Download [srum-dump](https://github.com/MarkBaggett/srum-dump) and unzip at Tools/srum-dump
-
 ## Triage Post-Processing
 
 #### Suggested Steps
