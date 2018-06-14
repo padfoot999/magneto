@@ -1,36 +1,6 @@
-#-----------------------------------------------------------
-# appcompatcache.pl, userassist.pl,
-#
-# History:
-#  20160528 - updated code to not de-dup entries based on filename
-#  20160217 - updated to correctly support Win10
-#  20150611 - mod'd for Kevin Pagano
-#  20150429 - updated to support Win10
-#  20140724 - update based on data provided by Shafik Punja
-#  20130801 - added initial Win8 support; very alpha at the moment
-#  20130603 - updated alerts
-#  20130509 - added additional alerts/warnings
-#  20130425 - added alertMsg() functionality
-#  20120817 - updated to address issue with residual data in XP data blocks
-#  20120722 - updated the %config hash
-#  20120523 - updated to send all files to a single hash, and check for temp paths
-#  20120515 - Updated to support 64-bit Win2003 and Vista/Win2008
-#  20120424 - Modified/updated
-#  20120418 - created
-#
-# References:
-#  https://binaryforay.blogspot.com/2016/05/appcompatcacheparser-v0900-released-and.html
-#  Blog post: https://blog.mandiant.com/archives/2459
-#  Whitepaper: http://fred.mandiant.com/Whitepaper_ShimCacheParser.pdf
-#  Tool: https://github.com/mandiant/ShimCacheParser
-#  Win10: http://binaryforay.blogspot.com/2015/04/appcompatcache-changes-in-windows-10.html
-#
-# This plugin is based solely on the work and examples provided by Mandiant;
-# thanks to them for sharing this information, and making the plugin possible.
-#
-# copyright 2016 Quantum Analytics Research, LLC
-# Author: H. Carvey, keydet89@yahoo.com
-#-----------------------------------------------------------
+#--------------------------------------------------------------------------------
+# appcompatcache.pl, userassist.pl, runmru.pl, shimcache.pl, bam.pl, recentapps.pl
+#--------------------------------------------------------------------------------
 package fileExecutionParser;
 use strict;
 use Excel::Writer::XLSX;
@@ -73,28 +43,47 @@ sub pluginmain {
 	my $reg = Parse::Win32Registry->new($system);
 	my $root_key = $reg->get_root_key;
 
-	my $workbook = Excel::Writer::XLSX->new($output.'FileExecutionParser.xlsx');
-	my $worksheet = $workbook->add_worksheet();
-	$worksheet->write(0,0,"1");
-	$worksheet->write(0,1,"2");
-	$worksheet->write(0,2,"3");
-	$worksheet->write(0,3,"4");
-	$worksheet->write(0,4,"5");
-	$worksheet->write(0,5,"6");
-	$worksheet->write(0,6,"7");
-	$worksheet->write(0,7,"8");
-	$worksheet->write(0,8,"9");
-	$worksheet->write(0,9,"10");
-	$worksheet->write(0,10,"11");
-	$worksheet->write(0,11,"12");
-	$worksheet->write(0,12,"13");
-	$worksheet->write(0,13,"14");
-	$worksheet->write(0,14,"15");
-	$worksheet->write(0,15,"16");
-	$worksheet->write(0,16,"17");
-	$worksheet->write(0,17,"18");
-	$worksheet->write(0,18,"19");
+	#Create an excel sheet for each plugin
+	#appcompatcache.pl
+	my $fileexecution_workbook = Excel::Writer::XLSX->new($output.'FileExecution.xlsx');
+	my $appcompatcache_worksheet = $fileexecution_workbook->add_worksheet('AppCompatCache');
+	$appcompatcache_worksheet->write(0,0,"Path");
+	$appcompatcache_worksheet->write(0,1,"Last Modified");
+	$appcompatcache_worksheet->write(0,2,"Last Updated");
+	$appcompatcache_worksheet->write(0,3,"Size");
+	$appcompatcache_worksheet->write(0,4,"Exec Flag");
 
+	#userassist.pl	
+	my $userassist_worksheet = $fileexecution_workbook->add_worksheet('UserAssist');
+	$userassist_worksheet->write(0,0,"Path");
+	$userassist_worksheet->write(0,1,"Launch Location");
+	$userassist_worksheet->write(0,2,"Last Executed");
+	$userassist_worksheet->write(0,3,"User");
+	
+	#runmru.pl
+	my $runmru_worksheet = $fileexecution_workbook->add_worksheet('RunMRU');
+	$runmru_worksheet->write(0,0,"Program Name");
+	$runmru_worksheet->write(0,1,"User");
+	
+	#amcache.pl
+	my $amcache_worksheet = $fileexecution_workbook->add_worksheet('AmCache');
+	$amcache_worksheet->write(0,0,"Path");
+	$amcache_worksheet->write(0,1,"SHA1");
+	$amcache_worksheet->write(0,2,"First Executed");
+	$amcache_worksheet->write(0,3,"Volume GUID");
+
+	#bam.pl 
+	my $bam_worksheet = $fileexecution_workbook->add_worksheet('BAM');
+	$bam_worksheet->write(0,0,"Path");
+	$bam_worksheet->write(0,1,"Last Executed");
+	$bam_worksheet->write(0,2,"User");
+
+	#recentapps.pl
+	my $recentapps_worksheet = $fileexecution_workbook->add_worksheet('RecentApps');
+	$recentapps_worksheet->write(0,0,"Path");
+	$recentapps_worksheet->write(0,1,"Last Executed");
+	$recentapps_worksheet->write(0,2,"User");
+	
 	my $row = 1;
 # First thing to do is get the ControlSet00x marked current...this is
 # going to be used over and over again in plugins that access the system
@@ -151,7 +140,7 @@ sub pluginmain {
 #				probe($app_data);
 
 			}
-			elsif ($sig == 0x30) {
+			elsif ($sig == 0x30 || $sig == 0x34) {
 # Windows 10 system
 				appWin10($app_data);
 			}
@@ -159,14 +148,6 @@ sub pluginmain {
 				::rptMsg(sprintf "Unknown signature: 0x%x",$sig);
 			}
 # this is where we print out the files
-			# $worksheet->write(0,0,"Source File");
-			# $worksheet->write(0,1,"Path");
-			# $worksheet->write(0,2,"Program Name");
-			# $worksheet->write(0,3,"User");
-			# $worksheet->write(0,4,"Last Modified/Last Execution");
-			# $worksheet->write(0,5,"Last Updated");
-			# $worksheet->write(0,6,"Source");
-			# $worksheet->write(0,7,"Action");
 			foreach my $f (keys %files) {
 				my $modtime = $files{$f}{modtime};
 				if ($modtime == 0) {
@@ -175,45 +156,31 @@ sub pluginmain {
 				else {
 					$modtime = gmtime($modtime)." Z";
 				}
-
-				if (exists $files{$f}{updtime}) {
-					my $updtime = $files{$f}{updtime};
-					$worksheet->write($row,2,$updtime);
-				}
-
-				if (exists $files{$f}{size}) {
-					my $size = $files{$f}{size};
-					$worksheet->write($row,3,$size);
-				}
-
-				$worksheet->write($row,0,$files{$f}{filename});
-				$worksheet->write($row,1,$modtime);
-				$worksheet->write($row,4,"Executed") if (exists $files{$f}{executed});
+				$appcompatcache_worksheet->write($row,1,$modtime);
+				$appcompatcache_worksheet->write($row,0,$files{$f}{filename});
+				$appcompatcache_worksheet->write($row,2,gmtime($files{$f}{updtime})." Z") if (exists $files{$f}{updtime});
+				$appcompatcache_worksheet->write($row,4,"Executed") if (exists $files{$f}{executed});
 				$row++;
 			}
 		}
-		else {
-			::rptMsg($appcompat_path." not found.");
-		}
 	}
-	else {
-		::rptMsg($key_path." not found.");
-	}
+
 	my %userDictionary;
 	$reg = Parse::Win32Registry->new($software);
 	$root_key = $reg->get_root_key;
 	$key_path = "Microsoft\\Windows NT\\CurrentVersion\\ProfileList";
-	my $key = $root_key->get_subkey($key_path);
-	my @subkeys = $key->get_list_of_subkeys();
-	if (scalar(@subkeys) > 0) {
-		foreach my $s (@subkeys) {
-			my $profilePath;
-			eval {
-				$profilePath = $s->get_value("ProfileImagePath")->get_data();
-			};
-			my @dataArray = split /\\/, $profilePath;
-			if ($dataArray[1] eq "Users") {
-				$userDictionary{$s->get_name()} = $dataArray[2];
+	if(my $key = $root_key->get_subkey($key_path)) {
+		my @subkeys = $key->get_list_of_subkeys();
+		if (scalar(@subkeys) > 0) {
+			foreach my $s (@subkeys) {
+				my $profilePath;
+				eval {
+					$profilePath = $s->get_value("ProfileImagePath")->get_data();
+				};
+				my @dataArray = split /\\/, $profilePath;
+				if ($dataArray[1] eq "Users") {
+					$userDictionary{$s->get_name()} = $dataArray[2];
+				}
 			}
 		}
 	}
@@ -250,10 +217,16 @@ sub pluginmain {
 				@sk = $s1->get_list_of_subkeys();
 				if (scalar(@sk) > 0) {
 					foreach my $s (@sk) {
-						$worksheet->write($row,15,$s->get_value("15")->get_data());
-						$worksheet->write($row,16,$s->get_value("101")->get_data());
-						$worksheet->write($row,17,gmtime($s->get_timestamp())." Z");
-						$worksheet->write($row,18,$volguid);
+						# $worksheet->write($row,15,$s->get_value("15")->get_data());
+						# $worksheet->write($row,16,$s->get_value("101")->get_data());
+						# $worksheet->write($row,17,gmtime($s->get_timestamp())." Z");
+						# $worksheet->write($row,18,$volguid);
+
+						$amcache_worksheet->write($row,0,$s->get_value("15")->get_data());
+						$amcache_worksheet->write($row,1,$s->get_value("101")->get_data());
+						$amcache_worksheet->write($row,2,gmtime($s->get_timestamp())." Z");
+						$amcache_worksheet->write($row,3,$volguid);
+
 						$row++;
 					}
 				}	
@@ -263,7 +236,6 @@ sub pluginmain {
 			::rptMsg($key_path." not found.");
 		}
 	};
-
 
 	$row = 1;
 	#Volume GUID => User Name
@@ -279,41 +251,51 @@ sub pluginmain {
 		$root_key = $reg->get_root_key;
 		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist";
 		if (my $key = $root_key->get_subkey($key_path)) {
-			@subkeys = $key->get_list_of_subkeys();
+			my @subkeys = $key->get_list_of_subkeys();
 			if (scalar(@subkeys) > 0) {
 				foreach my $s (@subkeys) {
 					my %ua = processKey($s);
 					foreach my $t (reverse sort {$a <=> $b} keys %ua) {
 						foreach my $i (@{$ua{$t}}) {
-							$worksheet->write($row,7,gmtime($t)." Z");
-							$worksheet->write($row,8,$userDictionary{$userId});
-							$worksheet->write($row,6,$s->get_name());
-							$worksheet->write($row,5,$i);
+							# $worksheet->write($row,7,gmtime($t)." Z");
+							# $worksheet->write($row,8,$userDictionary{$userId});
+							# $worksheet->write($row,6,$s->get_name());
+							# $worksheet->write($row,5,$i);
+
+							$userassist_worksheet->write($row,2,gmtime($t)." Z");
+							if($userDictionary{$userId}) {
+								$userassist_worksheet->write($row,3,$userDictionary{$userId});
+							}
+							else {
+								$userassist_worksheet->write($row,3,$userId);
+							}
+							$userassist_worksheet->write($row,1,$s->get_name());
+							$userassist_worksheet->write($row,0,$i);
+							$row++;	
 						}
-						$row++;
 					}
 				}
 			}
 		}
 
-		$key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32";
-		if (my $key = $root_key->get_subkey($key_path)) {
-			my @subkeys = $key->get_list_of_subkeys();
+		# $key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32";
+		# if (my $key = $root_key->get_subkey($key_path)) {
+		# 	my @subkeys = $key->get_list_of_subkeys();
 
-			if (scalar @subkeys > 0) {
-				foreach my $s (@subkeys) {
-					if ($s->get_name() eq "LastVisitedMRU") {
-						$row = 1;
-						parseLastVisitedMRU($s, $row, $worksheet, $userDictionary{$userId});
-					}
+		# 	if (scalar @subkeys > 0) {
+		# 		foreach my $s (@subkeys) {
+		# 			if ($s->get_name() eq "LastVisitedMRU") {
+		# 				$row = 1;
+		# 				parseLastVisitedMRU($s, $row, $lastvistedmru_worksheet, $userDictionary{$userId});
+		# 			}
 
-					if ($s->get_name() eq "LastVisitedPidlMRU" || $s->get_name() eq "LastVisitedPidlMRULegacy") {
-						$row = 1;
-						parseLastVisitedPidlMRU($s, $row, $worksheet, $userDictionary{$userId});
-					}
-				}
-			}
-		}
+		# 			if ($s->get_name() eq "LastVisitedPidlMRU" || $s->get_name() eq "LastVisitedPidlMRULegacy") {
+		# 				$row = 1;
+		# 				parseLastVisitedPidlMRU($s, $row, $lastvistedmru_worksheet, $userDictionary{$userId});
+		# 			}
+		# 		}
+		# 	}
+		# }
 
 		$row = 1;
 		$key_path = 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU';
@@ -327,14 +309,111 @@ sub pluginmain {
 					$mru = $v->get_data() if ($v->get_name() eq "MRUList");
 				}
 				foreach my $r (sort keys %runvals) {
-					$worksheet->write($row,13,$runvals{$r});
-					$worksheet->write($row,14,$userDictionary{$userId});
+					# $worksheet->write($row,13,$runvals{$r});
+					# $worksheet->write($row,14,$userDictionary{$userId});
+
+					$runmru_worksheet->write($row,0,$runvals{$r});
+					if($userDictionary{$userId}) {
+						$runmru_worksheet->write($row,1,$userDictionary{$userId});
+					}
+					else {
+						$runmru_worksheet->write($row,1,$userId);
+					}			
+					$row++;
+				}
+			}
+		}
+
+		#RecentApps
+		$row = 1;
+		$key_path = 'Software\\Microsoft\\Windows\\CurrentVersion\\Search\\RecentApps';
+		if (my $key = $root_key->get_subkey($key_path)) {
+			my @subkeys = $key->get_list_of_subkeys();
+			if (scalar(@subkeys) > 0) {
+				foreach my $s (@subkeys) { 
+					eval {
+						$recentapps_worksheet->write($row,0,$s->get_value("AppId")->get_data());
+						my ($t1,$t2) = unpack("VV",$s->get_value("LastAccessedTime")->get_data());
+						my $lat = ::getTime($t1,$t2);
+						my $last_exec = "".gmtime($lat)."UTC";
+						$recentapps_worksheet->write($row,1,$last_exec);
+						if($userDictionary{$userId}) {
+							$recentapps_worksheet->write($row,2,$userDictionary{$userId});
+						}
+						else {
+							$recentapps_worksheet->write($row,2,$userId);
+						}
+					};
 					$row++;
 				}
 			}
 		}
 	}
-	$workbook->close();
+
+	#BAM
+	$row = 1;
+	$reg = Parse::Win32Registry->new($system);
+	$root_key = $reg->get_root_key;
+# First thing to do is get the ControlSet00x marked current...this is
+# going to be used over and over again in plugins that access the system
+# file
+	my ($current,$ccs);
+	$key_path = 'Select';
+	if ($key = $root_key->get_subkey($key_path)) {
+		$current = $key->get_value("Current")->get_data();
+		$ccs = "ControlSet00".$current;
+		my $bam_path = $ccs."\\Services\\bam\\UserSettings";
+		my $bam;
+		if ($bam = $root_key->get_subkey($bam_path)) {
+			my @sk = $bam->get_list_of_subkeys();
+			if (scalar(@sk) > 0) {
+				foreach my $s (@sk) {
+					my %result = bam_processKey($s);
+					foreach my $k (keys %result) {
+						$bam_worksheet->write($row,0,$k);
+						$bam_worksheet->write($row,1,$result{$k});
+						if($userDictionary{$s->get_name()}) {
+							$bam_worksheet->write($row,2,$userDictionary{$s->get_name()});
+						}
+						else {
+							$bam_worksheet->write($row,2,$s->get_name());
+						}
+						$row++;
+					} 
+				}
+			}	
+		}
+	}
+
+
+	$fileexecution_workbook->close();
+}
+
+sub bam_processKey {
+	my $key = shift;
+	my ($t,$count);
+	my @values = $key->get_list_of_values();
+	my %result;
+
+	foreach (@values) {
+		$count = 1 if ($_->get_type() == 3);
+	}
+	
+	if (scalar(@values) > 0 && $count == 1) {
+#		::rptMsg($key->get_name());
+		foreach my $v (@values) {
+			my $name = $v->get_name();
+			if ($v->get_type() == 3) {
+				my ($t0,$t1) = unpack("VV",substr($v->get_data(),0,8));
+				$t = ::getTime($t0,$t1);
+				$result{$name} = gmtime($t);
+#				::rptMsg("  ".gmtime($t)." - ".$name);
+			}
+				
+		}
+#		::rptMsg("");
+		return %result;
+	}		
 }
 
 #-----------------------------------------------------------
@@ -518,7 +597,7 @@ sub appWin10 {
 	my $len = length($data);
 	my ($tag, $sz, $t0, $t1, $name, $name_len);
 	my $ct = 0;
-	my $ofs = 0x30;
+	my $ofs = unpack("V",substr($data,0,4));
 
 	while ($ofs < $len) {
 		$tag = substr($data,$ofs,4);
@@ -623,6 +702,7 @@ sub printData {
 	}
 	return @display;
 }
+
 sub processKey {
 	my $ua = shift;
 	my $key = $ua->get_subkey("Count");
@@ -662,141 +742,7 @@ sub processKey {
 		return %ua;
 	}
 }
-sub parseLastVisitedMRU {
-	my $key = shift;
-	my $row = shift;
-	my $worksheet = shift;
-	my $user = shift;
-	my %lvmru;
-	my @mrulist;
-	my @vals = $key->get_list_of_values();
 
-	if (scalar(@vals) > 0) {
-# First, read in all of the values and the data
-		foreach my $v (@vals) {
-			$lvmru{$v->get_name()} = $v->get_data();
-		}
-# Then, remove the MRUList value
-		if (exists $lvmru{MRUList}) {
-			::rptMsg("  MRUList = ".$lvmru{MRUList});
-			@mrulist = split(//,$lvmru{MRUList});
-			delete($lvmru{MRUList});
-			foreach my $m (@mrulist) {
-				my ($file,$dir) = split(/\x00\x00/,$lvmru{$m},2);
-				$file =~ s/\x00//g;
-				$dir  =~ s/\x00//g;
-				#File Name
-				$worksheet->write($row,9,$file);
-				#File Path
-				$worksheet->write($row,10,$dir);
-				#MRU List EX
-				$worksheet->write($row,11,$m);
-				#User
-				$worksheet->write($row,12,$user);
-				$row++;
-			}
-		}
-	}
-}
-
-sub parseLastVisitedPidlMRU {
-	my $key = shift;
-	my $row = shift;
-	my $worksheet = shift;
-	my $user = shift;
-	my %lvmru;
-	my @mrulist;
-	my @vals = $key->get_list_of_values();
-	my %mru;
-	my $count = 0;
-
-	if (scalar(@vals) > 0) {
-# First, read in all of the values and the data
-		foreach my $v (@vals) {
-			$lvmru{$v->get_name()} = $v->get_data();
-		}
-# Then, remove the MRUList value
-		if (exists $lvmru{MRUListEx}) {
-			my @mrulist = unpack("V*",$lvmru{MRUListEx});
-			foreach my $n (0..(scalar(@mrulist) - 2)) {
-				$mru{$count++} = $lvmru{$mrulist[$n]};
-			}
-			delete $mru{0xffffffff};
-
-			foreach my $m (sort {$a <=> $b} keys %mru) {
-				my ($file,$shell) = split(/\x00\x00/,$mru{$m},2);
-				$file =~ s/\x00//g;
-				$shell =~ s/^\x00//;
-				my $str = parseShellItem($shell);
-				#File Name
-				$worksheet->write($row,9,$file);
-				#File Path
-				$worksheet->write($row,10,$str);
-				#MRU List EX
-				$worksheet->write($row,11,$m);
-				#User
-				$worksheet->write($row,12,$user);
-				$row++;
-			}
-		}
-	}
-	return $row;
-}
-sub parseShellItem {
-	my $data = shift;
-	my $len = length($data);
-	my $str;
-
-	my $tag = 1;
-	my $cnt = 0;
-	while ($tag) {
-		my %item = ();
-		my $sz = unpack("v",substr($data,$cnt,2));
-		$tag = 0 if (($sz == 0) || ($cnt + $sz > $len));
-
-		my $dat = substr($data,$cnt,$sz);
-		my $type = unpack("C",substr($dat,2,1));
-#		::rptMsg(sprintf "  Size: ".$sz."  Type: 0x%x",$type);
-
-		if ($type == 0x1F) {
-# System Folder
- 			%item = parseSystemFolderEntry($dat);
- 			$str .= "\\".$item{name};
- 		}
- 		elsif ($type == 0x2F) {
-# Volume (Drive Letter)
- 			%item = parseDriveEntry($dat);
- 			$item{name} =~ s/\\$//;
- 			$str .= "\\".$item{name};
- 		}
- 		elsif ($type == 0x31 || $type == 0x32 || $type == 0x3a || $type == 0x74) {
- 			%item = parseFolderEntry($dat);
- 			$str .= "\\".$item{name};
- 		}
- 		elsif ($type == 0x00) {
-
- 		}
- 		elsif ($type == 0xc3 || $type == 0x41 || $type == 0x42 || $type == 0x46 || $type == 0x47) {
-# Network stuff
-			my $id = unpack("C",substr($dat,3,1));
-			if ($type == 0xc3 && $id != 0x01) {
-				%item = parseNetworkEntry($dat);
-			}
-			else {
-				%item = parseNetworkEntry($dat);
-			}
-			$str .= "\\".$item{name};
- 		}
- 		else {
- 			$item{name} = sprintf "Unknown Type (0x%x)",$type;
- 			$str .= "\\".$item{name};
-# 			probe($dat);
- 		}
-		$cnt += $sz;
-	}
-	$str =~ s/^\\//;
-	return $str;
-}
 sub parseSystemFolderEntry {
 	my $data     = shift;
 	my %item = ();
