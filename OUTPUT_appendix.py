@@ -351,7 +351,7 @@ def outputSummary(directory, projectname, results):
 			#NOTE: This is PIPE SEPARATED NOT COMMA SEPARATED!
 			#ZFTODO: Need additional processing to separate PIPE!
 			if "Destinations.tsv" in rawFile:
-				currentcustomlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheet_name='File or Folder Opening', usecols="E:J",header=1)
+				#currentcustomlist = pd.read_excel('./Results/' + projectname + '/' + imgname + '-Summary-' + timestamp + '.xlsx', sheet_name='File or Folder Opening', usecols="E:J",header=1)
 
 				jmplist = pd.DataFrame()
 				rawdata = open(rawFile, "r").readline()
@@ -373,11 +373,11 @@ def outputSummary(directory, projectname, results):
 					fileActivities['Last Modified'] = ""
 					fileActivities['Forensic Evidence Source'] = "Jumplist"	
 					fileActivities['Imagename'] = imgname
-					fileActivities['Comment'] = jmplistResults['MachineID']	
+					fileActivities['Comment'] = rawjmplist['MachineID']	
 
 					fileActivities = clean(fileActivities, list(fileActivities))								
 					fileActivities.to_excel(writer,sheet_name="File Activities",startcol=0,startrow=fileActivitiesRowCount,index=False,header=False)				
-					fileActivitiesRowCount += len(jmplistResults.index)				
+					fileActivitiesRowCount += len(rawjmplist.index)				
 					writer.save()	
 		
 			#lnk_parser_cmd.exe output is a Report_*.csv file
